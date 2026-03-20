@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FYS Packet Creator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <header>
+        <div class="header-content">
+            <h1>FYS Packet Creator</h1>
+            <p class="subtitle">First-Year Seminar Program &mdash; Department Packet Generator</p>
+        </div>
+    </header>
+
+    <main>
+        <!-- Step 1: Upload -->
+        <section class="card" id="upload-section">
+            <h2><span class="step-num">1</span> Upload Spreadsheets</h2>
+            <p class="hint">Upload the data files used to generate each PDF. At least one file is required.</p>
+
+            <div class="upload-grid">
+                <div class="upload-box" id="box-saved">
+                    <div class="upload-icon">&#128202;</div>
+                    <h3>SAVED.xlsx</h3>
+                    <p>Faculty teaching history &mdash; generates PDFs 1, 2, 4, 5</p>
+                    <input type="file" id="file-saved" accept=".xlsx,.xls" />
+                    <label for="file-saved" class="upload-btn">Choose File</label>
+                    <span class="file-name" id="name-saved"></span>
+                </div>
+
+                <div class="upload-box" id="box-current">
+                    <div class="upload-icon">&#128203;</div>
+                    <h3>APPLICATION_CURRENT.xlsx</h3>
+                    <p>Current enrollment data &mdash; generates PDF 6</p>
+                    <input type="file" id="file-current" accept=".xlsx,.xls" />
+                    <label for="file-current" class="upload-btn">Choose File</label>
+                    <span class="file-name" id="name-current"></span>
+                </div>
+
+                <div class="upload-box" id="box-holygrail">
+                    <div class="upload-icon">&#128213;</div>
+                    <h3>HOLYGRAIL.xlsx</h3>
+                    <p>Prior year enrollment &amp; evaluations &mdash; generates PDF 7</p>
+                    <input type="file" id="file-holygrail" accept=".xlsx,.xls" />
+                    <label for="file-holygrail" class="upload-btn">Choose File</label>
+                    <span class="file-name" id="name-holygrail"></span>
+                </div>
+            </div>
+
+            <button class="primary-btn" id="btn-generate" disabled>
+                Generate All Packets
+            </button>
+        </section>
+
+        <!-- Progress -->
+        <section class="card hidden" id="progress-section">
+            <h2>Generating Packets&hellip;</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <p id="progress-text">Processing spreadsheets&hellip;</p>
+        </section>
+
+        <!-- Step 2: Results -->
+        <section class="card hidden" id="results-section">
+            <div class="results-header">
+                <h2><span class="step-num">2</span> Generated Packets</h2>
+                <button class="secondary-btn" id="btn-download-all">
+                    Download All (ZIP)
+                </button>
+            </div>
+
+            <div class="stats-bar" id="stats-bar"></div>
+
+            <div class="results-controls">
+                <input type="text" id="search-dept" placeholder="Search departments&hellip;" />
+            </div>
+
+            <div class="dept-grid" id="dept-grid"></div>
+        </section>
+
+        <!-- Step 3: Preview -->
+        <section class="card hidden" id="preview-section">
+            <div class="preview-header">
+                <h2 id="preview-title">Preview</h2>
+                <button class="close-btn" id="btn-close-preview">&times;</button>
+            </div>
+            <iframe id="pdf-preview" src="about:blank"></iframe>
+        </section>
+    </main>
+
+    <footer>
+        <p>FYS Packet Creator &mdash; Harvard First-Year Seminar Program</p>
+    </footer>
+
+    <script src="/static/app.js"></script>
+</body>
+</html>

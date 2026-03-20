@@ -1,0 +1,258 @@
+"""FYS Packet Creator - Flask web application.
+
+Upload spreadsheets, generate PDF packets for all departments,
+preview results, and download organized output.
+"""
+
+import os
+import shutil
+import zipfile
+import tempfile
+import traceback
+from io import BytesIO
+from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
+import pandas as pd
+
+from generators.shared import ACRONYM_TO_FULL, sanitize_department_name
+from generators.pdf1_seminar_counts import create_pdf1
+from generators.pdf2_faculty_rank import create_pdf2
+from generators.pdf4_rank_aggregator import create_pdf4, read_excel_data_by_department
+from generators.pdf5_faculty_table import create_pdf5
+from generators.pdf5_faculty_table import read_excel_data_by_department as read_pdf5_data
+from generators.pdf6_enrollment import create_pdf6, load_enrollment_data, get_all_departments as get_pdf6_depts
+from generators.pdf7_evaluations import create_pdf7, load_holygrail_data, get_all_departments as get_pdf7_depts
+from generators.combiner import combine_department_pdfs
+
+app = Flask(__name__)
+app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
+
+UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
+OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
+
+os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
+
+
+@app.route('/upload', methods=['POST'])
+def upload_files():
+    """Handle file uploads and store them."""
+    uploaded = {}
+
+    for key in ['saved_xlsx', 'application_current_xlsx', 'holygrail_xlsx']:
+        if key in request.files:
+            f = request.files[key]
+            if f.filename:
+                path = os.path.join(UPLOAD_DIR, key + '.xlsx')
+                f.save(path)
+                uploaded[key] = f.filename
+
+    return jsonify({'status': 'ok', 'uploaded': uploaded})
+
+
+@app.route('/generate', methods=['POST'])
+def generate_packets():
+    """Generate all PDF packets from uploaded spreadsheets."""
+    # Clean output directory
+    if os.path.exists(OUTPUT_DIR):
+        shutil.rmtree(OUTPUT_DIR)
+    os.makedirs(OUTPUT_DIR)
+
+    saved_path = os.path.join(UPLOAD_DIR, 'saved_xlsx.xlsx')
+    current_path = os.path.join(UPLOAD_DIR, 'application_current_xlsx.xlsx')
+    holygrail_path = os.path.join(UPLOAD_DIR, 'holygrail_xlsx.xlsx')
+
+    results = {'departments': [], 'errors': [], 'pdfs_generated': 0}
+    all_depts = set()
+
+    # Determine departments from uploaded files
+    saved_headers = None
+    saved_data_by_dept = None
+    if os.path.exists(saved_path):
+        try:
+            saved_headers, saved_data_by_dept = read_excel_data_by_department(saved_path)
+            all_depts.update(saved_data_by_dept.keys())
+        except Exception as e:
+            results['errors'].append(f"Error reading SAVED.xlsx: {str(e)}")
+
+    enrollment_df = None
+    if os.path.exists(current_path):
+        try:
+            enrollment_df = load_enrollment_data(current_path)
+            all_depts.update(get_pdf6_depts(enrollment_df))
+        except Exception as e:
+            results['errors'].append(f"Error reading APPLICATION_CURRENT.xlsx: {str(e)}")
+
+    holygrail_df = None
+    if os.path.exists(holygrail_path):
+        try:
+            holygrail_df = load_holygrail_data(holygrail_path)
+            all_depts.update(get_pdf7_depts(holygrail_df))
+        except Exception as e:
+            results['errors'].append(f"Error reading HOLYGRAIL.xlsx: {str(e)}")
+
+    if not all_depts:
+        return jsonify({'status': 'error',
+                        'message': 'No departments found. Please upload at least one spreadsheet.'})
+
+    # Generate PDFs for each department
+    for dept in sorted(all_depts):
+        if not dept or dept == 'nan':
+            continue
+
+        sanitized = sanitize_department_name(dept)
+        dept_folder = os.path.join(OUTPUT_DIR, f"[{sanitized}]")
+        os.makedirs(dept_folder, exist_ok=True)
+
+        dept_pdfs = []
+
+        # PDF 1 & 2 (same for all departments - from SAVED.xlsx department list)
+        if saved_data_by_dept and dept in saved_data_by_dept:
+            try:
+                pdf1_path = os.path.join(dept_folder, f"1. [{sanitized}] # of First-Year Seminars by Academic Year.pdf")
+                create_pdf1(dept, pdf1_path)
+                dept_pdfs.append('PDF 1')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 1: {str(e)}")
+
+            try:
+                pdf2_path = os.path.join(dept_folder, f"2. [{sanitized}] % of Seminars According to Faculty Rank.pdf")
+                create_pdf2(dept, pdf2_path)
+                dept_pdfs.append('PDF 2')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 2: {str(e)}")
+
+        # PDF 4 (Rank Aggregator - from SAVED.xlsx)
+        if saved_data_by_dept and dept in saved_data_by_dept:
+            try:
+                pdf4_path = os.path.join(dept_folder, f"4. [{sanitized}] Seminars Taught per Year per Rank.pdf")
+                create_pdf4(dept, pdf4_path, saved_data_by_dept[dept])
+                dept_pdfs.append('PDF 4')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 4: {str(e)}")
+
+        # PDF 5 (Faculty Table - from SAVED.xlsx)
+        if saved_data_by_dept and dept in saved_data_by_dept and saved_headers:
+            try:
+                pdf5_path = os.path.join(dept_folder, f"5. [{sanitized}] Faculty Teaching Seminars by Name.pdf")
+                create_pdf5(dept, pdf5_path, saved_headers, saved_data_by_dept[dept])
+                dept_pdfs.append('PDF 5')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 5: {str(e)}")
+
+        # PDF 6 (Enrollment - from APPLICATION_CURRENT.xlsx)
+        if enrollment_df is not None:
+            try:
+                pdf6_path = os.path.join(dept_folder, f"6. [{sanitized}] 2025\u20132026 Enrollment Report.pdf")
+                create_pdf6(dept, pdf6_path, enrollment_df)
+                dept_pdfs.append('PDF 6')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 6: {str(e)}")
+
+        # PDF 7 (Evaluations - from HOLYGRAIL.xlsx)
+        if holygrail_df is not None:
+            try:
+                pdf7_path = os.path.join(dept_folder, f"7. [{sanitized}] 2024\u20132025 Enrollment and Evaluations.pdf")
+                create_pdf7(dept, pdf7_path, holygrail_df)
+                dept_pdfs.append('PDF 7')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 7: {str(e)}")
+
+        # Combine all PDFs for this department
+        if dept_pdfs:
+            try:
+                combined_path = os.path.join(dept_folder, f"ALL [{sanitized}] Files.pdf")
+                combine_department_pdfs(dept_folder, combined_path)
+                dept_pdfs.append('Combined')
+            except Exception as e:
+                results['errors'].append(f"[{dept}] Combine: {str(e)}")
+
+        if dept_pdfs:
+            results['departments'].append({
+                'name': dept,
+                'full_name': ACRONYM_TO_FULL.get(dept, dept),
+                'pdfs': dept_pdfs
+            })
+
+    return jsonify({'status': 'ok', 'results': results})
+
+
+@app.route('/departments')
+def list_departments():
+    """List all generated department folders."""
+    if not os.path.exists(OUTPUT_DIR):
+        return jsonify([])
+
+    departments = []
+    for folder in sorted(os.listdir(OUTPUT_DIR)):
+        if folder.startswith('[') and folder.endswith(']'):
+            dept_code = folder[1:-1]
+            dept_path = os.path.join(OUTPUT_DIR, folder)
+            pdfs = [f for f in os.listdir(dept_path) if f.endswith('.pdf')]
+            departments.append({
+                'code': dept_code,
+                'full_name': ACRONYM_TO_FULL.get(dept_code, dept_code),
+                'folder': folder,
+                'pdfs': sorted(pdfs),
+            })
+
+    return jsonify(departments)
+
+
+@app.route('/preview/<dept>/<path:filename>')
+def preview_pdf(dept, filename):
+    """Serve a PDF file for in-browser preview."""
+    dept_folder = os.path.join(OUTPUT_DIR, f"[{dept}]")
+    return send_from_directory(dept_folder, filename, mimetype='application/pdf')
+
+
+@app.route('/download/department/<dept>')
+def download_department(dept):
+    """Download all PDFs for a department as a zip."""
+    dept_folder = os.path.join(OUTPUT_DIR, f"[{dept}]")
+    if not os.path.exists(dept_folder):
+        return jsonify({'error': 'Department not found'}), 404
+
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for f in os.listdir(dept_folder):
+            if f.endswith('.pdf'):
+                zf.write(os.path.join(dept_folder, f), f"[{dept}]/{f}")
+
+    buf.seek(0)
+    return send_file(buf, mimetype='application/zip',
+                     as_attachment=True, download_name=f"[{dept}]_packets.zip")
+
+
+@app.route('/download/all')
+def download_all():
+    """Download all department packets as a single zip."""
+    if not os.path.exists(OUTPUT_DIR):
+        return jsonify({'error': 'No output generated yet'}), 404
+
+    buf = BytesIO()
+    with zipfile.ZipFile(buf, 'w', zipfile.ZIP_DEFLATED) as zf:
+        for root, dirs, files in os.walk(OUTPUT_DIR):
+            for f in files:
+                if f.endswith('.pdf'):
+                    full_path = os.path.join(root, f)
+                    arcname = os.path.relpath(full_path, OUTPUT_DIR)
+                    zf.write(full_path, arcname)
+
+    buf.seek(0)
+    return send_file(buf, mimetype='application/zip',
+                     as_attachment=True, download_name='FYS_Packets_All.zip')
+
+
+if __name__ == '__main__':
+    app.run(debug=True, port=5050)
