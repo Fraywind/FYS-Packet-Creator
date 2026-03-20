@@ -79,7 +79,8 @@ def create_seminar_count_chart(counts, years=None):
                        fontSize=10, fillColor=colors.black, fontName='Helvetica'))
     drawing.add(Rect(legend_x, legend_y - 20, 20, 12,
                      fillColor=crimson_red, strokeColor=crimson_red))
-    current_label = f"Current Year ({years[-1].replace('-', '\u2013')})" if years else "Current Year"
+    last_year = years[-1].replace('-', '\u2013') if years else ''
+    current_label = f"Current Year ({last_year})" if years else "Current Year"
     drawing.add(String(legend_x + 25, legend_y - 17, current_label,
                        fontSize=10, fillColor=colors.black, fontName='Helvetica'))
 
