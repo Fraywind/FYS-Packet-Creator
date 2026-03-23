@@ -1,4 +1,37 @@
-"""PDF 5: Faculty Teaching Seminars by Name - Table with checkmarks."""
+"""PDF 5: Faculty Teaching Seminars by Name - Table with Checkmarks.
+
+Generates a landscape PDF containing a detailed table listing every faculty member
+who has taught a seminar in a specific department, with checkmarks for each academic
+year they taught. This is a **department-specific** report.
+
+The table includes:
+    - Faculty name (sorted by rank hierarchy, then alphabetically)
+    - Faculty rank (with abbreviations like P.O.P. for Professor of the Practice)
+    - Checkmark grid for each academic year
+    - Color-coded checkmarks to distinguish rank context:
+        * Crimson red: Taught under current/most recent rank (standard 'X')
+        * Grey: Taught under FYSP entry rank ('X!')
+        * Pink: Taught under a higher/promoted rank ('X!!')
+    - Special symbols:
+        * Double checkmark: Multiple sections taught ('XX')
+        * Half circle: Joint department or co-teaching ('X*')
+
+Rank sorting hierarchy (top to bottom):
+    1. University Professor
+    2. Professor
+    3. Associate Professor
+    4. Assistant Professor
+    5. Professor of the Practice
+    6. Lecturer / Senior Lecturer
+    7. Emeritus / Emerita
+    8. Visiting (all levels)
+
+Data source: SAVED.xlsx (the "Big Faculty Full Spreadsheet")
+
+Dependencies:
+    openpyxl: Direct Excel file reading
+    reportlab: PDF generation with tables, styled text, and custom symbols
+"""
 
 import os
 import re
@@ -12,17 +45,45 @@ from reportlab.lib.units import inch
 from .shared import ACRONYM_TO_FULL
 
 
+# ---------------------------------------------------------------------------
+# Rank Name Conversion
+# ---------------------------------------------------------------------------
+
 def get_rank_full_name(rank):
-    """Convert rank to full name and handle stacking."""
+    """Convert a raw rank string to its full display name, handling multi-rank stacking.
+
+    Multi-rank strings (containing '/' or newlines) are split and each part is
+    normalized to a standard title. The parts are rejoined with newlines for
+    multi-line display in the table cell.
+
+    Args:
+        rank: Raw rank string from the spreadsheet. May contain '/' separators
+              for rank changes, or be None/empty.
+
+    Returns:
+        Normalized rank string with newline separators for multi-rank entries,
+        or empty string if rank is None/empty.
+
+    Examples:
+        >>> get_rank_full_name('Professor')
+        'Professor'
+        >>> get_rank_full_name('Assistant Professor/Associate Professor')
+        'Assistant Professor\\nAssociate Professor'
+        >>> get_rank_full_name(None)
+        ''
+    """
     if not rank or str(rank).strip() == '':
         return ''
 
+    # Split on '/' or newlines to get individual rank parts
     rank_normalized = str(rank).replace('/', '\n')
     rank_parts = [p.strip() for p in rank_normalized.split('\n') if p.strip()]
 
     converted = []
     for part in rank_parts:
         pl = part.lower().strip()
+
+        # Match each part to a standard title (most specific first)
         if 'assistant professor' in pl:
             converted.append('Assistant Professor')
         elif 'associate professor' in pl:
@@ -53,8 +114,35 @@ def get_rank_full_name(rank):
     return '\n'.join(converted) if converted else str(rank)
 
 
+# ---------------------------------------------------------------------------
+# Rank Sorting
+# ---------------------------------------------------------------------------
+
 def get_rank_sort_key(rank):
-    """Get sorting key for rank hierarchy using the latest/most recent rank."""
+    """Get a numeric sort key for a faculty rank, used to order rows in the table.
+
+    Returns a numeric value where lower numbers appear first. For multi-rank
+    faculty (with '/'), the LAST (most recent) rank determines sort order,
+    with special handling for Professor/Emeritus combinations.
+
+    Rank hierarchy (sort order):
+        0.5 - University Professor
+        1   - Professor
+        2   - Associate Professor
+        3   - Assistant Professor
+        3.5 - Professor of the Practice
+        4   - Lecturer / Senior Lecturer
+        5   - Emeritus / Emerita (and Professor+Emeritus combos)
+        6   - Visiting
+        7   - Other / Unknown
+        99  - No rank provided
+
+    Args:
+        rank: Raw rank string from the spreadsheet. May contain '/' separators.
+
+    Returns:
+        Numeric sort key (float). Lower values sort first.
+    """
     if not rank:
         return 99
 
@@ -65,7 +153,7 @@ def get_rank_sort_key(rank):
 
     latest = rank_parts[-1].lower()
 
-    # Check for Professor/Emeritus combo
+    # Special case: Professor who also has Emeritus status
     has_prof_emeritus = False
     has_regular_prof = False
     for part in rank_parts:
@@ -77,6 +165,7 @@ def get_rank_sort_key(rank):
                 has_regular_prof = True
             break
 
+    # Determine sort key based on most recent rank
     if 'university professor' in latest:
         return 0.5
     elif has_prof_emeritus:
@@ -99,8 +188,21 @@ def get_rank_sort_key(rank):
         return 7
 
 
+# ---------------------------------------------------------------------------
+# Rank Abbreviation
+# ---------------------------------------------------------------------------
+
 def get_rank_abbreviation(rank):
-    """Abbreviate Professor of the Practice to P.O.P."""
+    """Abbreviate 'Professor of the Practice' to 'P.O.P.' for compact table display.
+
+    All other ranks are returned unchanged.
+
+    Args:
+        rank: Display-ready rank string.
+
+    Returns:
+        Abbreviated rank string if applicable, otherwise the original string.
+    """
     if not isinstance(rank, str):
         return str(rank)
     if 'professor of the practice' in rank.lower():
@@ -108,8 +210,24 @@ def get_rank_abbreviation(rank):
     return rank
 
 
+# ---------------------------------------------------------------------------
+# Excel Data Reader
+# ---------------------------------------------------------------------------
+
 def read_excel_data_by_department(file_path):
-    """Read SAVED.xlsx and return data grouped by department."""
+    """Read SAVED.xlsx and return data grouped by department.
+
+    This is a duplicate of the same function in pdf4_rank_aggregator.py,
+    kept here for module independence. Both produce the same output format.
+
+    Args:
+        file_path: Path to the SAVED.xlsx file.
+
+    Returns:
+        A tuple of (headers, data_by_dept) where:
+        - headers: list of column header strings
+        - data_by_dept: dict mapping department acronym -> list of row dicts
+    """
     wb = openpyxl.load_workbook(file_path)
     ws = wb.active
 
@@ -130,11 +248,37 @@ def read_excel_data_by_department(file_path):
     return headers, data_by_dept
 
 
-def create_pdf5(dept, output_path, headers, dept_data):
-    """Create PDF 5 (Faculty Teaching Seminars by Name) for a department.
+# ---------------------------------------------------------------------------
+# PDF Builder
+# ---------------------------------------------------------------------------
 
-    headers: list of column headers from SAVED.xlsx
-    dept_data: list of row dicts for this department
+def create_pdf5(dept, output_path, headers, dept_data):
+    """Create PDF 5 (Faculty Teaching Table) for a specific department.
+
+    Generates a landscape-oriented PDF with:
+    - A "Faculty Teaching Seminars by Name" main title
+    - The department full name as a crimson subtitle
+    - A table with one row per faculty member, showing:
+        * Professor name (bold)
+        * Rank (abbreviated if needed)
+        * Checkmark grid for each academic year
+    - Color-coded checkmarks (crimson, grey, pink) per teaching marker
+    - A legend explaining the symbols and colors
+
+    Faculty are sorted by rank hierarchy (University Professors first) and
+    alphabetically within each rank group.
+
+    Args:
+        dept: Department acronym (e.g., 'HIST').
+        output_path: Full file path for the output PDF.
+        headers: List of column headers from SAVED.xlsx.
+        dept_data: List of row dicts for this department from SAVED.xlsx.
+
+    Table styling:
+        - Crimson header row with white text
+        - Alternating white/light-grey row backgrounds
+        - Grey grid lines
+        - Color-coded checkmarks for different teaching marker types
     """
     department_full_name = ACRONYM_TO_FULL.get(dept, dept)
 
@@ -154,72 +298,77 @@ def create_pdf5(dept, output_path, headers, dept_data):
     story.append(Paragraph("Faculty Teaching Seminars by Name", title_style))
     story.append(Paragraph(department_full_name, dept_style))
 
-    # Get year columns
+    # Identify year columns (everything except Professor, Rank, Department)
     year_columns = [h for h in headers if h not in ['Professor', 'Rank', 'Department']]
 
-    # Sort by rank hierarchy then alphabetically
+    # Sort faculty by rank hierarchy, then alphabetically within each rank
     def sort_key(row):
         return (get_rank_sort_key(row.get('Rank', '')), str(row.get('Professor', '')).lower())
 
     sorted_data = sorted(dept_data, key=sort_key)
 
-    # Build table
+    # --- Build table data ---
     table_headers = ['Professor', 'Rank'] + year_columns
     table_data = [table_headers]
 
     for row in sorted_data:
         table_row = []
 
-        # Professor
+        # Professor name
         professor = row.get('Professor', '')
         table_row.append(str(professor))
 
-        # Rank
+        # Rank (converted to full name, then abbreviated for display)
         rank = row.get('Rank', '')
         if rank:
             full_rank = get_rank_full_name(rank)
             abbreviated = get_rank_abbreviation(full_rank)
-            # Clean HTML tags if any
             clean = abbreviated.replace('<br/>', '\n').replace('<b>', '').replace('</b>', '')
             table_row.append(clean)
         else:
             table_row.append('')
 
-        # Year columns
+        # Year columns: convert data markers to display symbols
         for year in year_columns:
-            value = row.get(year, '')
-            if value == 'X':
-                table_row.append('\u2713')
+            value = str(row.get(year, '') or '').strip()
+            if not value:
+                table_row.append('')
+            elif '*' in value:
+                table_row.append('\u25d7')          # Half circle (joint/co-teaching)
             elif value == 'XX':
-                table_row.append('\u2713\u2713')
-            elif value == 'X!':
-                table_row.append('\u2713')
-            elif value == 'X!!':
-                table_row.append('\u2713')
-            elif value and isinstance(value, str) and ('X*' in value or (value.startswith('X') and '*' in value)):
-                table_row.append('\u25d7')  # Half circle
+                table_row.append('\u2713\u2713')    # Double checkmark
             else:
-                table_row.append(str(value) if value else '')
+                table_row.append('\u2713')          # Checkmark (color set later)
 
         table_data.append(table_row)
 
+    # --- Style the table ---
     table = Table(table_data, repeatRows=1)
 
     style = TableStyle([
+        # Header row: crimson background, white bold text
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B0000')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
         ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
+
+        # Name and Rank columns: left-aligned, bold
         ('ALIGN', (0, 1), (1, -1), 'LEFT'),
         ('FONTNAME', (0, 1), (1, -1), 'Helvetica-Bold'),
         ('FONTSIZE', (0, 1), (1, -1), 11),
+
+        # Year data columns: centered
         ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
         ('FONTSIZE', (2, 1), (-1, -1), 12),
         ('FONTNAME', (2, 1), (-1, -1), 'Helvetica'),
+
+        # Grid and alternating row colors
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
+
+        # Cell padding and alignment
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
         ('LEFTPADDING', (0, 0), (-1, -1), 4),
@@ -227,30 +376,40 @@ def create_pdf5(dept, output_path, headers, dept_data):
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ])
 
-    # Color checkmarks
+    # --- Apply color coding to checkmarks based on original data markers ---
+    # B suffix = black (Retired or No Longer at Harvard)
+    # ! = grey (FYSP Entry Rank), !! = pink (FYSP Higher Rank)
+    # Otherwise = crimson (current rank)
     for row_idx in range(1, len(table_data)):
         for col_idx in range(2, len(table_data[row_idx])):
             cell = table_data[row_idx][col_idx]
-            original = sorted_data[row_idx - 1].get(year_columns[col_idx - 2], '')
+            original = str(sorted_data[row_idx - 1].get(year_columns[col_idx - 2], '') or '').strip()
 
-            if cell == '\u25d7':
+            if not cell:
+                continue
+
+            # B suffix takes priority — render in black
+            if 'B' in original:
+                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
+                           colors.black)
+            elif '!!' in original:
+                # Higher rank marker -> pink
+                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
+                           colors.HexColor('#FF6B6B'))
+            elif '!' in original:
+                # Entry rank marker -> grey
+                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.grey)
+            else:
+                # Standard marker -> crimson
                 style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
                            colors.HexColor('#8B0000'))
-            elif cell in ('\u2713', '\u2713\u2713'):
-                if original == 'X!':
-                    style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.grey)
-                elif original == 'X!!':
-                    style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
-                               colors.HexColor('#FF6B6B'))
-                else:
-                    style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
-                               colors.HexColor('#8B0000'))
 
     table.setStyle(style)
     story.append(table)
 
-    # Legend
+    # --- Legend ---
     story.append(Spacer(1, 20))
+
     legend_title_style = ParagraphStyle('LegendTitle', parent=styles['Heading3'],
                                         fontSize=16, spaceAfter=10, alignment=0,
                                         textColor=colors.HexColor('#8B0000'))
@@ -264,11 +423,17 @@ def create_pdf5(dept, output_path, headers, dept_data):
                                        fontSize=13, spaceAfter=5, leftIndent=20,
                                        textColor=colors.HexColor('#FF6B6B'))
 
+    legend_style_black = ParagraphStyle('LegendBlack', parent=styles['Normal'],
+                                        fontSize=13, spaceAfter=5, leftIndent=20,
+                                        textColor=colors.black)
+
     story.append(Paragraph("Legend:", legend_title_style))
     story.append(Paragraph("\u2713 = Current Rank Years Taught", legend_style_red))
     story.append(Paragraph("\u2713 = FYSP Entry Rank", legend_style_grey))
     story.append(Paragraph("\u2713 = FYSP Higher Rank", legend_style_pink))
     story.append(Paragraph("\u2713\u2713 = Multiple Sections Taught (2.0 score)", legend_style_red))
     story.append(Paragraph("\u25d7 = Joint Department or Co-teaching (0.5 score)", legend_style_red))
+    story.append(Paragraph("\u25d7 = Retired or No Longer at Harvard", legend_style_black))
+    story.append(Paragraph("\u2713 = Retired or No Longer at Harvard", legend_style_black))
 
     doc.build(story)
