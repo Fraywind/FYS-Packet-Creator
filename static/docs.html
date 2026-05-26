@@ -1,0 +1,1095 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Handbook — FYS Packet Creator</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* ─────────────────────────────────────────────────────────────
+   Handbook — editorial typography
+   ───────────────────────────────────────────────────────── */
+:root {
+    --ink:          #1c1917;
+    --ink-soft:     #2c2723;
+    --paper:        #f5f1e6;
+    --paper-soft:   #ede7d4;
+    --paper-deep:   #e3dcc4;
+    --crimson:      #8a1a1a;
+    --crimson-deep: #5e0e0e;
+    --crimson-fade: rgba(138, 26, 26, 0.08);
+    --gold:         #a07a2e;
+    --rule:         #2c2723;
+    --rule-soft:    rgba(44, 39, 35, 0.18);
+    --muted:        #6b6157;
+    --muted-soft:   #8b8275;
+    --ok:           #4a6b3d;
+    --warn:         #a8501f;
+
+    --display: "Fraunces", "Times New Roman", Georgia, serif;
+    --body:    "Crimson Pro", "Iowan Old Style", Cambria, serif;
+    --mono:    "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 19px;
+    line-height: 1.6;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    position: relative;
+}
+
+::selection { background: var(--crimson); color: var(--paper); }
+
+/* Grain overlay */
+body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none;
+    z-index: 0; opacity: 0.3;
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(138,26,26,0.04) 0, transparent 35%),
+        radial-gradient(circle at 88% 80%, rgba(160,122,46,0.05) 0, transparent 40%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+}
+
+/* ─── Layout ─── */
+.shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+/* ─── Sidebar TOC ─── */
+.sidebar {
+    border-right: 1px solid var(--rule-soft);
+    padding: 3rem 1.6rem 3rem 2.5rem;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.brand {
+    margin-bottom: 2rem;
+}
+.brand-back {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--crimson);
+    border-bottom: 1px solid var(--crimson);
+    padding-bottom: 2px;
+}
+.brand-back:hover { color: var(--crimson-deep); border-color: var(--crimson-deep); }
+.brand-title {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 1.4rem;
+    line-height: 1.1;
+    margin-top: 1rem;
+    color: var(--ink);
+    font-variation-settings: "opsz" 36;
+}
+
+.toc-label {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule-soft);
+}
+
+.toc { list-style: none; }
+.toc li { margin-bottom: 0.5rem; }
+.toc a {
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-family: var(--body);
+    font-size: 0.95rem;
+    line-height: 1.3;
+    padding: 0.25rem 0;
+    transition: color 0.15s;
+}
+.toc a:hover { color: var(--crimson); }
+.toc-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted-soft);
+    min-width: 1.8em;
+}
+.toc-sub {
+    padding-left: 2rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+.toc-sub::before { content: "·  "; color: var(--muted-soft); }
+
+/* ─── Main content ─── */
+.handbook {
+    padding: 4rem 4rem 6rem 4rem;
+    max-width: 880px;
+}
+
+.eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--crimson);
+    margin-bottom: 1rem;
+}
+
+.handbook-title {
+    font-family: var(--display);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    margin-bottom: 1.4rem;
+}
+.handbook-title .h-the {
+    display: block;
+    font-style: italic;
+    font-weight: 300;
+    font-size: 1.5rem;
+    color: var(--ink-soft);
+    margin-bottom: -0.2rem;
+    font-variation-settings: "opsz" 24;
+}
+.handbook-title .h-main {
+    display: block;
+    font-size: clamp(3rem, 6vw, 5rem);
+    font-weight: 500;
+}
+
+.lede {
+    font-family: var(--body);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+    padding-left: 1.2rem;
+    border-left: 3px solid var(--crimson);
+}
+
+/* ─── Section headers ─── */
+section { margin-top: 4rem; scroll-margin-top: 1.5rem; }
+
+.sec-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.4rem;
+    align-items: baseline;
+    margin-bottom: 1.8rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--ink);
+}
+.sec-num {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 2.4rem;
+    color: var(--crimson);
+    line-height: 1;
+    font-variation-settings: "opsz" 48;
+}
+.sec-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    font-variation-settings: "opsz" 72;
+}
+
+h3.sub {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    color: var(--crimson-deep);
+    margin-top: 2.4rem;
+    margin-bottom: 0.7rem;
+    letter-spacing: -0.01em;
+    font-variation-settings: "opsz" 36;
+}
+
+h4.subsub {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--crimson);
+    margin-top: 1.6rem;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+}
+
+p { margin-bottom: 1rem; max-width: 64ch; }
+p.tight { margin-bottom: 0.4rem; }
+.muted { color: var(--muted); font-size: 0.95rem; font-style: italic; }
+
+strong { font-weight: 600; color: var(--ink); }
+em { font-style: italic; }
+
+code, .mono {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--paper-soft);
+    padding: 0.08rem 0.35rem;
+    border-radius: 2px;
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+/* ─── Workbook card ─── */
+.workbook {
+    margin-top: 2rem;
+    padding: 2rem 2rem 1.6rem;
+    background: rgba(255, 252, 244, 0.6);
+    border: 1px solid var(--rule-soft);
+    border-left: 4px solid var(--crimson);
+    border-radius: 2px;
+}
+.workbook-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+}
+.workbook-name {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.7rem;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    line-height: 1.1;
+    font-variation-settings: "opsz" 48;
+}
+.workbook-filename {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 0.3rem 0.6rem;
+    border-radius: 1px;
+    letter-spacing: 0.04em;
+}
+.workbook-produces {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+}
+.workbook-produces strong { color: var(--crimson); }
+
+/* ─── Tables ─── */
+table.cols, table.legend, table.summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-family: var(--body);
+    font-size: 0.95rem;
+}
+table.cols th, table.legend th, table.summary th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--crimson);
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid var(--ink);
+    background: transparent;
+}
+table.cols td, table.legend td, table.summary td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+}
+table.cols td:first-child { font-family: var(--mono); font-size: 0.84rem; color: var(--ink); width: 32%; }
+table.legend td:first-child { font-family: var(--mono); font-weight: 600; color: var(--crimson); width: 22%; }
+table.summary td:first-child { font-family: var(--mono); width: 24%; }
+
+/* ─── Steps ─── */
+ol.steps {
+    list-style: none;
+    counter-reset: step;
+    margin: 1rem 0 1.5rem;
+}
+ol.steps > li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.8rem 0 0.8rem 4rem;
+    border-bottom: 1px dotted var(--rule-soft);
+    min-height: 3rem;
+}
+ol.steps > li:last-child { border-bottom: none; }
+ol.steps > li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--crimson);
+    letter-spacing: 0.05em;
+}
+ol.steps > li > strong:first-child {
+    display: block;
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+    font-variation-settings: "opsz" 24;
+}
+
+/* ─── Lists ─── */
+ul.bullets {
+    list-style: none;
+    margin: 0.8rem 0 1.2rem 0.4rem;
+}
+ul.bullets li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: 0.55rem;
+    max-width: 64ch;
+}
+ul.bullets li::before {
+    content: "—";
+    position: absolute;
+    left: 0;
+    color: var(--crimson);
+    font-weight: 600;
+}
+
+/* ─── Callouts ─── */
+.callout {
+    margin: 1.4rem 0;
+    padding: 1.1rem 1.4rem;
+    border-left: 3px solid var(--gold);
+    background: rgba(160, 122, 46, 0.07);
+    font-family: var(--body);
+    font-size: 0.97rem;
+    color: var(--ink-soft);
+}
+.callout strong {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.callout.note { border-color: var(--crimson); background: var(--crimson-fade); }
+.callout.note strong { color: var(--crimson); }
+
+.callout.warn { border-color: var(--warn); background: rgba(168, 80, 31, 0.08); }
+.callout.warn strong { color: var(--warn); }
+
+/* ─── PDF cards ─── */
+.pdf-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.pdf-card {
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    padding: 1.2rem 1.2rem 1rem;
+    background: rgba(255, 252, 244, 0.5);
+}
+.pdf-card-num {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--crimson);
+    line-height: 1;
+    font-variation-settings: "opsz" 36;
+}
+.pdf-card-title {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin: 0.5rem 0 0.4rem;
+    line-height: 1.2;
+    font-variation-settings: "opsz" 24;
+}
+.pdf-card p {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.4rem;
+    max-width: none;
+}
+.pdf-card-src {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+}
+
+/* ─── Colophon ─── */
+.colophon {
+    margin-top: 5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.colophon em {
+    font-family: var(--display);
+    font-style: italic;
+    color: var(--ink-soft);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+/* ─── Responsive ─── */
+@media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar {
+        position: static;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--rule-soft);
+        padding: 2rem 1.4rem;
+    }
+    .handbook { padding: 3rem 1.4rem 4rem; }
+}
+
+@media (max-width: 520px) {
+    body { font-size: 17px; }
+    .handbook-title .h-main { font-size: 2.6rem; }
+    .sec-head { grid-template-columns: 1fr; gap: 0.4rem; }
+    .sec-num { font-size: 1.8rem; }
+    .sec-title { font-size: 1.6rem; }
+    .workbook { padding: 1.4rem 1.2rem; }
+    .workbook-name { font-size: 1.3rem; }
+    ol.steps > li { padding-left: 3rem; }
+}
+
+/* Print */
+@media print {
+    body::before { display: none; }
+    .sidebar { display: none; }
+    .shell { display: block; }
+    .handbook { padding: 0; max-width: 100%; }
+    a { color: var(--ink); text-decoration: underline; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="shell">
+
+<!-- ═══════════════════════════════════════════════════════════
+     SIDEBAR — Table of contents
+     ═══════════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+    <div class="brand">
+        <a class="brand-back" href="/">← Back to app</a>
+        <p class="brand-title">The Packet<br />Creator <em>Handbook</em></p>
+    </div>
+
+    <p class="toc-label">Contents</p>
+    <ul class="toc">
+        <li><a href="#what"><span class="toc-num">I</span><span>What this is</span></a></li>
+        <li><a href="#produces"><span class="toc-num">II</span><span>What it produces</span></a></li>
+        <li><a href="#workbooks"><span class="toc-num">III</span><span>The three workbooks</span></a></li>
+        <li><a href="#saved" class="toc-sub">SAVED.xlsx</a></li>
+        <li><a href="#applications" class="toc-sub">APPLICATION_CURRENT.xlsx</a></li>
+        <li><a href="#holygrail" class="toc-sub">HOLYGRAIL.xlsx</a></li>
+        <li><a href="#running"><span class="toc-num">IV</span><span>Running the tool</span></a></li>
+        <li><a href="#pdfs"><span class="toc-num">V</span><span>The seven PDFs explained</span></a></li>
+        <li><a href="#troubleshooting"><span class="toc-num">VI</span><span>Troubleshooting</span></a></li>
+        <li><a href="#yearly"><span class="toc-num">VII</span><span>Yearly maintenance</span></a></li>
+        <li><a href="#developers"><span class="toc-num">VIII</span><span>For developers</span></a></li>
+    </ul>
+</aside>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN HANDBOOK
+     ═══════════════════════════════════════════════════════════ -->
+<main class="handbook">
+
+    <p class="eyebrow">Harvard · First-Year Seminar Program · Handbook</p>
+
+    <h1 class="handbook-title">
+        <span class="h-the">A handbook for</span>
+        <span class="h-main">The Packet Creator</span>
+    </h1>
+
+    <p class="lede">
+        Each year the FYSP office produces a folder of reports — a “packet” — for every academic department that offers a first-year seminar. This tool takes three spreadsheets, makes the seven reports for every department in seconds, and bundles them as PDFs ready to send.
+    </p>
+
+    <!-- ═════════════════════════════════════════════
+         I — WHAT THIS IS
+         ═════════════════════════════════════════════ -->
+    <section id="what">
+        <header class="sec-head">
+            <span class="sec-num">I.</span>
+            <h2 class="sec-title">What this is</h2>
+        </header>
+
+        <p>
+            The First-Year Seminar Program packets historically required someone in the FYSP office to assemble, by hand, a folder of reports for each of the forty-odd departments at Harvard. This tool automates that — it reads the office's working spreadsheets and produces every department's packet at once.
+        </p>
+
+        <p>
+            You do not need to write code, install Python, or understand how the reports are generated. You only need three things: the source workbooks, a browser, and someone (or this tool's host) keeping the application running.
+        </p>
+
+        <div class="callout">
+            <strong>Who this handbook is for</strong>
+            FYSP office staff who run the tool once or twice a year. We assume no programming background; we do assume you've worked with the office's Excel files before, or that you can ask whoever currently maintains them.
+        </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         II — WHAT IT PRODUCES
+         ═════════════════════════════════════════════ -->
+    <section id="produces">
+        <header class="sec-head">
+            <span class="sec-num">II.</span>
+            <h2 class="sec-title">What it produces</h2>
+        </header>
+
+        <p>
+            For each department — for instance <code>[ECON]</code> (Economics), <code>[HLS]</code> (Harvard Law School), <code>[SEAS]</code> (Engineering and Applied Sciences) — the tool produces a folder containing up to seven PDFs and one combined PDF that stitches them together.
+        </p>
+
+        <table class="summary">
+            <thead>
+                <tr><th>PDF</th><th>Title</th><th>Source</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td># of First-Year Seminars by Academic Year</td><td>SAVED.xlsx</td></tr>
+                <tr><td>2</td><td>% of Seminars According to Faculty Rank</td><td>SAVED.xlsx</td></tr>
+                <tr><td>4</td><td>Seminars Taught per Year per Rank</td><td>SAVED.xlsx</td></tr>
+                <tr><td>5</td><td>Faculty Teaching Seminars by Name</td><td>SAVED.xlsx</td></tr>
+                <tr><td>6</td><td>Current Year Enrollment Report</td><td>APPLICATION_CURRENT.xlsx</td></tr>
+                <tr><td>7</td><td>Prior Year Enrollment &amp; Evaluations</td><td>HOLYGRAIL.xlsx</td></tr>
+                <tr><td>ALL</td><td>Combined packet (1, 2, 4, 5, 6, 7)</td><td>—</td></tr>
+            </tbody>
+        </table>
+
+        <p class="muted">
+            PDF 3 — the “3D Map” — is not produced by this tool. It has historically been made separately and inserted into the combined packet by hand.
+        </p>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         III — WORKBOOKS
+         ═════════════════════════════════════════════ -->
+    <section id="workbooks">
+        <header class="sec-head">
+            <span class="sec-num">III.</span>
+            <h2 class="sec-title">The three workbooks</h2>
+        </header>
+
+        <p>
+            Everything the tool knows comes from these three Excel files. They are <strong>not</strong> public exports from a Harvard system that you download once and use; they are <strong>internal FYSP office files</strong>, assembled and curated by FYSP staff each year. Any one of them is sufficient to produce the reports it covers — the others will simply be skipped.
+        </p>
+
+        <table class="summary">
+            <thead>
+                <tr><th>File</th><th>Friendly name</th><th>Where it comes from</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SAVED.xlsx</td>
+                    <td>Faculty Teaching History</td>
+                    <td>Internal FYSP file, updated each year by office staff.</td>
+                </tr>
+                <tr>
+                    <td>APPLICATION_CURRENT.xlsx</td>
+                    <td>Current-Year Applications</td>
+                    <td>Pulled in part from the FYSP application portal, compiled by office staff each fall.</td>
+                </tr>
+                <tr>
+                    <td>HOLYGRAIL.xlsx</td>
+                    <td>Prior-Year Evaluations</td>
+                    <td>Compiled by office staff from the prior year's Q-report scores and enrollment.</td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- ═════════════ SAVED ═════════════ -->
+        <article id="saved" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Faculty Teaching History</h3>
+                <span class="workbook-filename">SAVED.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDFs 1, 2, 4, 5</strong></p>
+
+            <p>
+                A multi-year ledger of which faculty member taught a first-year seminar in which year, in which department, at what rank. It is the most complex of the three files and the only one that spans more than a single year.
+            </p>
+
+            <h4 class="subsub">Where it lives</h4>
+            <p>
+                Inside the FYSP office. It is not downloaded from any external system — it is a working document maintained by office staff. When you join the office, ask whoever last ran the packet generation for the current copy.
+            </p>
+
+            <h4 class="subsub">What you must do to it each year</h4>
+            <p>Before generating packets for a new academic year, the file needs the new year's information added by hand:</p>
+            <ul class="bullets">
+                <li><strong>Add a new column to the right</strong> for the incoming year, named like <code>2025-26</code> or <code>2025-2026</code> (the tool will abbreviate it on the PDF).</li>
+                <li><strong>For each faculty member, mark whether they are teaching a first-year seminar that year</strong> using the notation system below.</li>
+                <li><strong>Update ranks.</strong> If a professor was promoted (Assistant → Associate → Professor), retired (→ Emeritus / Emerita), or left, update the <em>Rank</em> column so this year's rank is accurate. Joint appointments are usually written as <code>Assistant Professor / Associate Professor</code> separated by a slash.</li>
+                <li><strong>Add new hires.</strong> If a department brought in new faculty teaching a seminar this year, add a new row.</li>
+            </ul>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>Professor</td><td>Faculty name (free-form text).</td></tr>
+                    <tr><td>Rank</td><td>Current rank — see notes on joint appointments below.</td></tr>
+                    <tr><td>Department</td><td>Department name spelled out — for example, <em>Economics</em>, not <em>ECON</em>. The tool maps full names to acronyms internally.</td></tr>
+                    <tr><td>One column per academic year</td><td>For example <code>2014-15</code>, <code>2015-16</code>, …, <code>2025-26</code>. Each cell uses the notation below to mark how that person taught that year.</td></tr>
+                </tbody>
+            </table>
+
+            <h4 class="subsub">Notation in the year cells</h4>
+            <table class="legend">
+                <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td>X</td><td>Taught one section that year.</td></tr>
+                    <tr><td>XX</td><td>Taught two sections that year.</td></tr>
+                    <tr><td>X*</td><td>Joint instruction or co-teaching — counted as half a seminar.</td></tr>
+                    <tr><td>X**, X***</td><td>Three- or four-way co-teaching — also counted as half (the share-out is handled in aggregate).</td></tr>
+                    <tr><td>X!</td><td>For joint appointments — the lower rank in the slash gets credit. Example: <code>Assistant Professor / Associate Professor</code> with <code>X!</code> credits Assistant.</td></tr>
+                    <tr><td>X!!</td><td>For joint appointments — the higher rank gets credit.</td></tr>
+                    <tr><td>X*!</td><td>Joint co-teaching <em>and</em> joint appointment — half credit to the lower rank.</td></tr>
+                    <tr><td>(blank)</td><td>Did not teach that year.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout note">
+                <strong>The cardinal rule</strong>
+                The integrity of every report from this file depends on these notations being correct. When in doubt, leave it blank rather than guess — a missing seminar is easier to notice than a miscredited one.
+            </div>
+        </article>
+
+        <!-- ═════════════ APPLICATION_CURRENT ═════════════ -->
+        <article id="applications" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Current-Year Applications</h3>
+                <span class="workbook-filename">APPLICATION_CURRENT.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDF 6</strong> — Current-Year Enrollment Report</p>
+
+            <p>
+                A roster of every first-year seminar being offered this academic year, together with how many students applied and how many were ultimately placed. It is the basis for the “popularity” story the packet tells each department: how oversubscribed (or undersubscribed) their seminars were this year.
+            </p>
+
+            <h4 class="subsub">Where it comes from</h4>
+            <p>
+                Partly the FYSP application portal — student applications are exported from there after the placement deadline. Historically the FYSP office has further edited and consolidated the export into a single working spreadsheet (Nina has been the person doing this in recent years). Ask the office for the current copy or the export-and-clean procedure that produces it.
+            </p>
+
+            <h4 class="subsub">What “# of Apps” vs. “Enrolled” mean</h4>
+            <ul class="bullets">
+                <li><strong>Total Appl Count</strong> (“# of Apps”) is how many students <em>applied</em> for the seminar. Because students rank multiple seminars, this number can be higher than the number who actually take the course.</li>
+                <li><strong>Placed</strong> (“Enrolled”) is how many students were <em>placed</em> in the seminar after the lottery — measured as of the fall course registration deadline.</li>
+            </ul>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>Department</td><td>Full department name (joint departments may be written as <code>Department A / Department B</code> — the tool splits these).</td></tr>
+                    <tr><td>Sem#</td><td>Seminar number, e.g. <code>15K</code>, <code>32T</code>.</td></tr>
+                    <tr><td>Term</td><td><em>Fall</em> or <em>Spring</em>.</td></tr>
+                    <tr><td>Title</td><td>Full seminar title.</td></tr>
+                    <tr><td>Fname</td><td>Instructor first name.</td></tr>
+                    <tr><td>LName</td><td>Instructor last name.</td></tr>
+                    <tr><td>Total Appl Count</td><td>Number of applications.</td></tr>
+                    <tr><td>Placed</td><td>Number of students placed.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout">
+                <strong>Cancelled or unrun seminars</strong>
+                Rows containing <code>NO PACKET</code> in any column are dropped automatically — use this convention if you need to keep a row in the file but exclude it from reports.
+            </div>
+        </article>
+
+        <!-- ═════════════ HOLYGRAIL ═════════════ -->
+        <article id="holygrail" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Prior-Year Evaluations</h3>
+                <span class="workbook-filename">HOLYGRAIL.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDF 7</strong> — Prior-Year Enrollment &amp; Evaluations</p>
+
+            <p>
+                A consolidated record of <em>last year's</em> first-year seminars: how many students applied, how many enrolled, and how students rated the seminar and instructor on the Q-report. This is what departments use to judge how their seminars actually went.
+            </p>
+
+            <h4 class="subsub">Where it comes from</h4>
+            <p>
+                This file is assembled by the FYSP office at the end of each academic year. It draws from two sources:
+            </p>
+            <ul class="bullets">
+                <li><strong>Q-report evaluation scores</strong> for each seminar — the student-completed course evaluation system.</li>
+                <li><strong>Enrollment numbers</strong> from the prior year's <code>APPLICATION_CURRENT.xlsx</code> (this year's “HOLYGRAIL” is largely last year's “APPLICATION_CURRENT” with Q-scores merged in).</li>
+            </ul>
+            <p>
+                Historically Nina has compiled this. If you are taking over the role, ask for the previous year's file and the procedure used to fold Q-scores in.
+            </p>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>DEPT</td><td>Full department name (joint departments split on <code> / </code>).</td></tr>
+                    <tr><td>SEM#</td><td>Seminar number.</td></tr>
+                    <tr><td>TERM</td><td><em>Fall</em> or <em>Spring</em>.</td></tr>
+                    <tr><td>TITLE</td><td>Seminar title.</td></tr>
+                    <tr><td>FIRST  NAME</td><td>Instructor first name. <em>Note: this column header has two spaces between “FIRST” and “NAME”.</em></td></tr>
+                    <tr><td>LAST NAME</td><td>Instructor last name.</td></tr>
+                    <tr><td>APPL#</td><td>Number of applications.</td></tr>
+                    <tr><td>ENROLL</td><td>Number of students enrolled.</td></tr>
+                    <tr><td>SEMQ</td><td>Seminar Q-score (student rating of the seminar).</td></tr>
+                    <tr><td>INST Q</td><td>Instructor Q-score (student rating of the instructor).</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout warn">
+                <strong>A note on the name</strong>
+                The filename <code>HOLYGRAIL.xlsx</code> is historic and inscrutable. A future maintainer is welcome to rename it (e.g. <code>EVALUATIONS_PRIOR.xlsx</code>) — but doing so requires a small developer change in two places in the code (see <a href="#developers">§ VIII</a>). Until then, the tool expects the file to be uploaded into the “Prior-Year Evaluations” slot regardless of its actual filename.
+            </div>
+        </article>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         IV — RUNNING THE TOOL
+         ═════════════════════════════════════════════ -->
+    <section id="running">
+        <header class="sec-head">
+            <span class="sec-num">IV.</span>
+            <h2 class="sec-title">Running the tool</h2>
+        </header>
+
+        <p>
+            Once the three workbooks are prepared, the process itself is fast — under a minute end-to-end. The application runs in your web browser; you do not need to install anything.
+        </p>
+
+        <ol class="steps">
+            <li>
+                <strong>Open the application.</strong>
+                Go to the URL the office has set up (typically <code>http://localhost:5050</code> if you are running it on your own machine, or a Harvard-hosted URL otherwise). If the page does not load, see <a href="#troubleshooting">§ VI</a>.
+            </li>
+            <li>
+                <strong>Upload your workbooks.</strong>
+                Drag each file onto its labeled box, or click and browse. You can upload one, two, or all three; missing files just skip their reports. The tool accepts <code>.xlsx</code> and <code>.xls</code>.
+            </li>
+            <li>
+                <strong>Click “Compose packets”.</strong>
+                The button only becomes active once at least one file is loaded. Generation takes ten to thirty seconds depending on how many departments are in your files.
+            </li>
+            <li>
+                <strong>Browse the index of departments.</strong>
+                Every department with data will appear in a list, with a count of how many PDFs were produced. You can search by code (e.g. <code>ECON</code>) or full name, and sort by code, name, or PDF count.
+            </li>
+            <li>
+                <strong>Preview each PDF in the browser.</strong>
+                Click any PDF in a department row to open it in the side panel without downloading. Click “Preview combined” to see the stitched-together packet for a department. Press <kbd>Esc</kbd> or “Close ×” to dismiss.
+            </li>
+            <li>
+                <strong>Download.</strong> Either download a single department's ZIP from its row, or use “Download all (ZIP)” at the top of the index to grab every department at once. The ZIP preserves the <code>[DEPT]/</code> folder structure.
+            </li>
+        </ol>
+
+        <div class="callout">
+            <strong>Re-running</strong>
+            You can re-run with different files at any time — the previous output is cleared automatically. Use the “Clear” button if you want to start over without uploading.
+        </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         V — THE SEVEN PDFS
+         ═════════════════════════════════════════════ -->
+    <section id="pdfs">
+        <header class="sec-head">
+            <span class="sec-num">V.</span>
+            <h2 class="sec-title">The seven PDFs explained</h2>
+        </header>
+
+        <p>
+            Each department's folder contains the following PDFs, named consistently. PDF 3 is intentionally absent — it is the 3D Map and is produced separately, outside this tool.
+        </p>
+
+        <div class="pdf-cards">
+            <article class="pdf-card">
+                <span class="pdf-card-num">1.</span>
+                <h4 class="pdf-card-title"># of First-Year Seminars by Academic Year</h4>
+                <p>A bar chart showing how many seminars the department offered each year.</p>
+                <p class="pdf-card-src">From SAVED.xlsx</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">2.</span>
+                <h4 class="pdf-card-title">% of Seminars According to Faculty Rank</h4>
+                <p>A breakdown of who taught — Professors, Associate, Lecturers, Visiting — as a share of the department's seminars.</p>
+                <p class="pdf-card-src">From SAVED.xlsx</p>
+            </article>
+
+            <article class="pdf-card" style="opacity:0.5">
+                <span class="pdf-card-num">3.</span>
+                <h4 class="pdf-card-title">3D Map of Seminars</h4>
+                <p><em>Not produced by this tool. Created separately and inserted by hand if needed.</em></p>
+                <p class="pdf-card-src">—</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">4.</span>
+                <h4 class="pdf-card-title">Seminars Taught per Year per Rank</h4>
+                <p>A full table: rows are rank categories, columns are years, cells are counts (with halves for co-teaching).</p>
+                <p class="pdf-card-src">From SAVED.xlsx</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">5.</span>
+                <h4 class="pdf-card-title">Faculty Teaching Seminars by Name</h4>
+                <p>A detailed table listing every faculty member and the years in which they taught.</p>
+                <p class="pdf-card-src">From SAVED.xlsx</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">6.</span>
+                <h4 class="pdf-card-title">Current-Year Enrollment Report</h4>
+                <p>This year's seminars: title, instructor, term, applications, students placed.</p>
+                <p class="pdf-card-src">From APPLICATION_CURRENT.xlsx</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">7.</span>
+                <h4 class="pdf-card-title">Prior-Year Enrollment &amp; Evaluations</h4>
+                <p>Last year's seminars with applications, enrollment, and Q-report scores for seminar &amp; instructor.</p>
+                <p class="pdf-card-src">From HOLYGRAIL.xlsx</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">ALL</span>
+                <h4 class="pdf-card-title">Combined packet</h4>
+                <p>PDFs 1, 2, 4, 5, 6, 7 stitched together into a single file for sending or printing.</p>
+                <p class="pdf-card-src">All sources</p>
+            </article>
+        </div>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         VI — TROUBLESHOOTING
+         ═════════════════════════════════════════════ -->
+    <section id="troubleshooting">
+        <header class="sec-head">
+            <span class="sec-num">VI.</span>
+            <h2 class="sec-title">Troubleshooting</h2>
+        </header>
+
+        <h3 class="sub">The page won't load</h3>
+        <p>
+            The application needs to be running on a server. If you are running it locally, open a terminal in the project folder and type <code>python app.py</code> — leave that window open while you use the tool. If it is supposed to be hosted, contact whoever set up the deployment.
+        </p>
+
+        <h3 class="sub">Generation finished but a department is missing</h3>
+        <p>
+            The most common cause is a spelling difference in the <em>Department</em> column. The tool matches department names against an internal list (e.g. <em>Government</em> → <code>GOV</code>, <em>Economics</em> → <code>ECON</code>). If a department name is misspelled or abbreviated in your spreadsheet, the tool will still create a folder for it but may not match it to the proper acronym. Check the “Warnings” shelf at the bottom of the results page for clues.
+        </p>
+
+        <h3 class="sub">A PDF says “No data available”</h3>
+        <p>
+            The tool found a department in one workbook but no matching rows in the workbook for that PDF. Example: PDF 6 says “no data” for <code>[ANTH]</code> — that means SAVED.xlsx had Anthropology, but APPLICATION_CURRENT.xlsx had no Anthropology rows this year. This is expected if a department is not running a seminar this year.
+        </p>
+
+        <h3 class="sub">A warning appears about reading a workbook</h3>
+        <p>
+            Open the file in Excel and check the column headers against the tables in <a href="#workbooks">§ III</a>. The most common culprits are a renamed header (e.g. <code>Department Name</code> instead of <code>Department</code>) or a stray blank column.
+        </p>
+
+        <h3 class="sub">Faculty appear in the wrong rank category</h3>
+        <p>
+            Check the Rank column in SAVED.xlsx. The categorization rules are listed in the Legend on the bottom of PDF 4. Common surprises: <em>Senior Lecturer</em>, <em>Senior Preceptor</em>, <em>Professor of the Practice</em>, and <em>Professor in Residence</em> are all grouped together as <code>SL/SP/PoP/PiR</code>. Anything with <em>Visiting</em> in the title goes to <em>Visiting (all levels)</em>.
+        </p>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         VII — YEARLY MAINTENANCE
+         ═════════════════════════════════════════════ -->
+    <section id="yearly">
+        <header class="sec-head">
+            <span class="sec-num">VII.</span>
+            <h2 class="sec-title">Yearly maintenance</h2>
+        </header>
+
+        <p>
+            Before each year's packet run, the office's working files need attention. Use this as a checklist.
+        </p>
+
+        <ol class="steps">
+            <li>
+                <strong>Update SAVED.xlsx for the new year.</strong>
+                Add a new year column on the right. Fill in the X / XX / X* / X! / X!! notation for every faculty member. Promote, retire, or remove faculty whose status changed. Add new hires.
+            </li>
+            <li>
+                <strong>Produce APPLICATION_CURRENT.xlsx for the new year.</strong>
+                Export student applications and placements from the FYSP application portal once the lottery is finalized. Clean and merge into the canonical sheet shape (see <a href="#applications">§ III</a>).
+            </li>
+            <li>
+                <strong>Produce HOLYGRAIL.xlsx for the prior year.</strong>
+                Take last year's APPLICATION_CURRENT.xlsx, merge in the matching Q-report scores for each seminar, and save as the new HOLYGRAIL.xlsx. This is the most time-consuming step.
+            </li>
+            <li>
+                <strong>Ask a developer to update hardcoded year titles, if needed.</strong>
+                The PDF 6 and PDF 7 titles include literal year ranges (e.g. <em>“2025–2026 Enrollment Report”</em>). When a new academic year begins, those strings must be updated in two files. See <a href="#developers">§ VIII</a>.
+            </li>
+            <li>
+                <strong>Run the tool, review, and distribute.</strong> Generate packets, spot-check a few departments (especially any with unusual joint appointments), then download and email out.
+            </li>
+        </ol>
+    </section>
+
+    <!-- ═════════════════════════════════════════════
+         VIII — FOR DEVELOPERS
+         ═════════════════════════════════════════════ -->
+    <section id="developers">
+        <header class="sec-head">
+            <span class="sec-num">VIII.</span>
+            <h2 class="sec-title">For developers</h2>
+        </header>
+
+        <p>
+            If you are taking over maintenance of the tool itself, this section is for you.
+        </p>
+
+        <h3 class="sub">Tech stack</h3>
+        <ul class="bullets">
+            <li><strong>Backend</strong> — Python 3, Flask, pandas, openpyxl, reportlab, PyPDF2.</li>
+            <li><strong>Frontend</strong> — vanilla HTML / CSS / JS. No build step. Served by Flask from <code>static/</code> and <code>templates/</code>.</li>
+        </ul>
+
+        <h3 class="sub">Running locally</h3>
+        <p>From the project root:</p>
+        <p><code>pip install -r requirements.txt</code><br /><code>python app.py</code></p>
+        <p>The app starts at <code>http://localhost:5050</code>.</p>
+
+        <h3 class="sub">Where things live</h3>
+        <table class="cols">
+            <thead><tr><th>Path</th><th>Purpose</th></tr></thead>
+            <tbody>
+                <tr><td>app.py</td><td>Flask routes — upload, generate, list, preview, download.</td></tr>
+                <tr><td>generators/shared.py</td><td>Department acronym → full-name mapping. Add new departments here.</td></tr>
+                <tr><td>generators/pdf1_…</td><td>PDF 1: bar chart of seminars by year.</td></tr>
+                <tr><td>generators/pdf2_…</td><td>PDF 2: rank percentage pie / breakdown.</td></tr>
+                <tr><td>generators/pdf4_…</td><td>PDF 4: rank-by-year aggregate table. Notation parsing lives here.</td></tr>
+                <tr><td>generators/pdf5_…</td><td>PDF 5: per-faculty table.</td></tr>
+                <tr><td>generators/pdf6_enrollment.py</td><td>PDF 6: current-year enrollment. <strong>Hardcoded year string at the top of <code>create_pdf6</code>.</strong></td></tr>
+                <tr><td>generators/pdf7_evaluations.py</td><td>PDF 7: prior-year enrollment + Q. <strong>Hardcoded year string at the top of <code>create_pdf7</code>.</strong></td></tr>
+                <tr><td>generators/combiner.py</td><td>Stitches the per-department PDFs into the <code>ALL […] Files.pdf</code>.</td></tr>
+                <tr><td>templates/index.html</td><td>Main page markup.</td></tr>
+                <tr><td>static/style.css</td><td>All styles.</td></tr>
+                <tr><td>static/app.js</td><td>Frontend logic (uploads, progress, results, preview).</td></tr>
+                <tr><td>static/docs.html</td><td>This handbook.</td></tr>
+            </tbody>
+        </table>
+
+        <h3 class="sub">Yearly code changes</h3>
+        <ol class="steps">
+            <li>
+                <strong>Bump the PDF 6 title year.</strong>
+                In <code>generators/pdf6_enrollment.py</code>, find the line containing <code>2025–2026 Enrollment Report</code> and update it to the new year. (Note the dash is a Unicode en-dash, not a hyphen.)
+            </li>
+            <li>
+                <strong>Bump the PDF 7 title year.</strong>
+                In <code>generators/pdf7_evaluations.py</code>, do the same for <code>2024–2025 Enrollment and Evaluations</code>.
+            </li>
+            <li>
+                <strong>(Optional) Refactor those out to constants.</strong>
+                A small future cleanup: move both year strings into <code>generators/shared.py</code> as <code>CURRENT_YEAR_LABEL</code> and <code>PRIOR_YEAR_LABEL</code> so the office can update them without touching generator code.
+            </li>
+        </ol>
+
+        <h3 class="sub">Renaming HOLYGRAIL.xlsx</h3>
+        <p>
+            To rename the file users upload (e.g. to <code>EVALUATIONS_PRIOR.xlsx</code>):
+        </p>
+        <ul class="bullets">
+            <li>In <code>app.py</code>, change the <code>holygrail_xlsx</code> field key and the saved filename. Two occurrences.</li>
+            <li>In <code>static/app.js</code>, change the <code>SOURCES</code> entry for <code>holygrail</code> so its <code>field</code> matches the new backend key.</li>
+            <li>In <code>templates/index.html</code>, update the dropzone's <code>data-field</code> attribute and the displayed filename.</li>
+            <li>The internals (column names like <code>DEPT</code>, <code>APPL#</code>, <code>SEMQ</code>) do not need to change — the rename is purely cosmetic at the upload boundary.</li>
+        </ul>
+
+        <h3 class="sub">Adding a new department</h3>
+        <p>
+            Open <code>generators/shared.py</code> and add an entry to <code>DEPARTMENT_MAPPING</code>: the key is the full name as it appears in your workbooks, the value is the acronym used for folder names and codes.
+        </p>
+    </section>
+
+    <footer class="colophon">
+        <p>FYS Packet Creator · Handbook · Volume I</p>
+        <p>Set in <em>Fraunces</em> &amp; <em>Crimson Pro</em></p>
+    </footer>
+
+</main>
+</div>
+
+</body>
+</html>

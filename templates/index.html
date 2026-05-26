@@ -1,100 +1,224 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FYS Packet Creator</title>
-    <link rel="stylesheet" href="/static/style.css">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Packet Creator — First-Year Seminar Program</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="/static/style.css" />
 </head>
 <body>
-    <header>
-        <div class="header-content">
-            <h1>FYS Packet Creator</h1>
-            <p class="subtitle">First-Year Seminar Program &mdash; Department Packet Generator</p>
+
+<div class="grain"></div>
+
+<header class="masthead">
+    <div class="rule rule-top"></div>
+    <div class="masthead-inner">
+        <div class="masthead-left">
+            <p class="eyebrow">Harvard · First-Year Seminar Program</p>
+            <h1 class="wordmark">
+                <span class="wordmark-the">The</span>
+                <span class="wordmark-main">Packet Creator</span>
+            </h1>
+            <p class="dek">A workshop for compiling departmental seminar reports — upload the season's workbooks and receive a packet for every department.</p>
         </div>
-    </header>
+        <nav class="masthead-nav">
+            <a class="nav-link" href="/static/docs.html" target="_blank" rel="noopener">
+                <span class="nav-num">§</span>
+                <span class="nav-label">Documentation</span>
+            </a>
+            <span class="nav-meta">Vol. I · No. 1</span>
+        </nav>
+    </div>
+    <div class="rule rule-bottom"></div>
+</header>
 
-    <main>
-        <!-- Step 1: Upload -->
-        <section class="card" id="upload-section">
-            <h2><span class="step-num">1</span> Upload Spreadsheets</h2>
-            <p class="hint">Upload the data files used to generate each PDF. At least one file is required.</p>
+<main class="folio">
 
-            <div class="upload-grid">
-                <div class="upload-box" id="box-saved">
-                    <div class="upload-icon">&#128202;</div>
-                    <h3>SAVED.xlsx</h3>
-                    <p>Faculty teaching history &mdash; generates PDFs 1, 2, 4, 5</p>
-                    <input type="file" id="file-saved" accept=".xlsx,.xls" />
-                    <label for="file-saved" class="upload-btn">Choose File</label>
-                    <span class="file-name" id="name-saved"></span>
-                </div>
-
-                <div class="upload-box" id="box-current">
-                    <div class="upload-icon">&#128203;</div>
-                    <h3>APPLICATION_CURRENT.xlsx</h3>
-                    <p>Current enrollment data &mdash; generates PDF 6</p>
-                    <input type="file" id="file-current" accept=".xlsx,.xls" />
-                    <label for="file-current" class="upload-btn">Choose File</label>
-                    <span class="file-name" id="name-current"></span>
-                </div>
-
-                <div class="upload-box" id="box-holygrail">
-                    <div class="upload-icon">&#128213;</div>
-                    <h3>HOLYGRAIL.xlsx</h3>
-                    <p>Prior year enrollment &amp; evaluations &mdash; generates PDF 7</p>
-                    <input type="file" id="file-holygrail" accept=".xlsx,.xls" />
-                    <label for="file-holygrail" class="upload-btn">Choose File</label>
-                    <span class="file-name" id="name-holygrail"></span>
-                </div>
+    <!-- ─────────────────────────────────────────────────────────────
+         I. SOURCE FILES
+         ────────────────────────────────────────────────────────── -->
+    <section class="movement" id="upload-section">
+        <header class="movement-head">
+            <span class="movement-num">I.</span>
+            <div>
+                <h2 class="movement-title">Source workbooks</h2>
+                <p class="movement-sub">Upload one, two, or all three. Any file you omit simply skips its associated reports — the rest still run.</p>
             </div>
+        </header>
 
-            <button class="primary-btn" id="btn-generate" disabled>
-                Generate All Packets
-            </button>
-        </section>
+        <div class="dropzones">
 
-        <!-- Progress -->
-        <section class="card hidden" id="progress-section">
-            <h2>Generating Packets&hellip;</h2>
-            <div class="progress-bar">
-                <div class="progress-fill" id="progress-fill"></div>
-            </div>
-            <p id="progress-text">Processing spreadsheets&hellip;</p>
-        </section>
+            <article class="dropzone" data-key="saved" data-field="saved_xlsx">
+                <header class="dz-head">
+                    <span class="dz-tag">Pdf · 1 · 2 · 4 · 5</span>
+                    <span class="dz-filename">SAVED.xlsx</span>
+                </header>
+                <h3 class="dz-name">Faculty Teaching History</h3>
+                <p class="dz-blurb">Multi-year ledger of who taught what. Faculty, rank, department, year-by-year notation.</p>
+                <div class="dz-drop" tabindex="0" role="button" aria-label="Upload SAVED.xlsx">
+                    <input type="file" id="file-saved" accept=".xlsx,.xls" hidden />
+                    <div class="dz-empty">
+                        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+                        <p class="dz-prompt">Drop file <span class="dz-or">or</span> <span class="dz-browse">browse</span></p>
+                    </div>
+                    <div class="dz-filled" hidden>
+                        <p class="dz-check">✓ <span class="dz-fname">—</span></p>
+                        <button type="button" class="dz-replace">Replace</button>
+                    </div>
+                </div>
+            </article>
 
-        <!-- Step 2: Results -->
-        <section class="card hidden" id="results-section">
-            <div class="results-header">
-                <h2><span class="step-num">2</span> Generated Packets</h2>
-                <button class="secondary-btn" id="btn-download-all">
-                    Download All (ZIP)
+            <article class="dropzone" data-key="current" data-field="application_current_xlsx">
+                <header class="dz-head">
+                    <span class="dz-tag">Pdf · 6</span>
+                    <span class="dz-filename">APPLICATION_CURRENT.xlsx</span>
+                </header>
+                <h3 class="dz-name">Current-Year Applications</h3>
+                <p class="dz-blurb">How many students applied to each seminar this season and how many were placed.</p>
+                <div class="dz-drop" tabindex="0" role="button" aria-label="Upload APPLICATION_CURRENT.xlsx">
+                    <input type="file" id="file-current" accept=".xlsx,.xls" hidden />
+                    <div class="dz-empty">
+                        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+                        <p class="dz-prompt">Drop file <span class="dz-or">or</span> <span class="dz-browse">browse</span></p>
+                    </div>
+                    <div class="dz-filled" hidden>
+                        <p class="dz-check">✓ <span class="dz-fname">—</span></p>
+                        <button type="button" class="dz-replace">Replace</button>
+                    </div>
+                </div>
+            </article>
+
+            <article class="dropzone" data-key="holygrail" data-field="holygrail_xlsx">
+                <header class="dz-head">
+                    <span class="dz-tag">Pdf · 7</span>
+                    <span class="dz-filename">HOLYGRAIL.xlsx</span>
+                </header>
+                <h3 class="dz-name">Prior-Year Evaluations</h3>
+                <p class="dz-blurb">Last year's enrollment numbers together with Q-report seminar and instructor scores.</p>
+                <div class="dz-drop" tabindex="0" role="button" aria-label="Upload HOLYGRAIL.xlsx">
+                    <input type="file" id="file-holygrail" accept=".xlsx,.xls" hidden />
+                    <div class="dz-empty">
+                        <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
+                        <p class="dz-prompt">Drop file <span class="dz-or">or</span> <span class="dz-browse">browse</span></p>
+                    </div>
+                    <div class="dz-filled" hidden>
+                        <p class="dz-check">✓ <span class="dz-fname">—</span></p>
+                        <button type="button" class="dz-replace">Replace</button>
+                    </div>
+                </div>
+            </article>
+
+        </div>
+
+        <footer class="movement-foot">
+            <p class="run-status" id="run-status">Choose at least one workbook to continue.</p>
+            <div class="run-actions">
+                <button class="btn btn-ghost" id="btn-reset" type="button">Clear</button>
+                <button class="btn btn-press" id="btn-generate" type="button" disabled>
+                    <span>Compose packets</span>
+                    <span class="btn-arrow">→</span>
                 </button>
             </div>
+        </footer>
+    </section>
 
-            <div class="stats-bar" id="stats-bar"></div>
-
-            <div class="results-controls">
-                <input type="text" id="search-dept" placeholder="Search departments&hellip;" />
+    <!-- ─────────────────────────────────────────────────────────────
+         PROGRESS
+         ────────────────────────────────────────────────────────── -->
+    <section class="movement progress-movement" id="progress-section" hidden>
+        <header class="movement-head">
+            <span class="movement-num">·</span>
+            <div>
+                <h2 class="movement-title" id="progress-headline">Composing…</h2>
+                <p class="movement-sub" id="progress-detail">Reading workbooks.</p>
             </div>
+        </header>
 
-            <div class="dept-grid" id="dept-grid"></div>
-        </section>
+        <ol class="phases">
+            <li class="phase" data-phase="upload"><span class="phase-num">01</span><span class="phase-label">Upload</span></li>
+            <li class="phase" data-phase="read"><span class="phase-num">02</span><span class="phase-label">Read workbooks</span></li>
+            <li class="phase" data-phase="generate"><span class="phase-num">03</span><span class="phase-label">Generate PDFs</span></li>
+            <li class="phase" data-phase="combine"><span class="phase-num">04</span><span class="phase-label">Combine</span></li>
+            <li class="phase" data-phase="done"><span class="phase-num">05</span><span class="phase-label">Done</span></li>
+        </ol>
 
-        <!-- Step 3: Preview -->
-        <section class="card hidden" id="preview-section">
-            <div class="preview-header">
-                <h2 id="preview-title">Preview</h2>
-                <button class="close-btn" id="btn-close-preview">&times;</button>
+        <div class="progress-strip">
+            <div class="progress-strip-fill" id="progress-fill"></div>
+        </div>
+    </section>
+
+    <!-- ─────────────────────────────────────────────────────────────
+         II. INDEX OF DEPARTMENTS
+         ────────────────────────────────────────────────────────── -->
+    <section class="movement" id="results-section" hidden>
+        <header class="movement-head">
+            <span class="movement-num">II.</span>
+            <div>
+                <h2 class="movement-title">Index of departments</h2>
+                <p class="movement-sub" id="results-sub">—</p>
             </div>
-            <iframe id="pdf-preview" src="about:blank"></iframe>
-        </section>
-    </main>
+        </header>
 
-    <footer>
-        <p>FYS Packet Creator &mdash; Harvard First-Year Seminar Program</p>
-    </footer>
+        <div class="index-toolbar">
+            <div class="search">
+                <span class="search-glyph">⌕</span>
+                <input type="search" id="search-dept" placeholder="Search by code or full name…" autocomplete="off" />
+            </div>
+            <div class="toolbar-right">
+                <div class="sort">
+                    <label for="sort-dept">Order</label>
+                    <select id="sort-dept">
+                        <option value="code">By code</option>
+                        <option value="name">By full name</option>
+                        <option value="count">By PDF count</option>
+                    </select>
+                </div>
+                <button class="btn btn-press btn-small" id="btn-download-all" type="button">
+                    Download all (ZIP)
+                </button>
+            </div>
+        </div>
 
-    <script src="/static/app.js"></script>
+        <ul class="dept-index" id="dept-grid"></ul>
+
+        <div class="errors-shelf" id="errors-shelf" hidden>
+            <h3 class="errors-title">Warnings</h3>
+            <ul class="errors-list" id="errors-list"></ul>
+        </div>
+    </section>
+
+</main>
+
+<!-- ─────────────────────────────────────────────────────────────
+     PREVIEW DRAWER
+     ────────────────────────────────────────────────────────── -->
+<aside class="preview" id="preview-section" hidden>
+    <header class="preview-head">
+        <div>
+            <p class="preview-eyebrow" id="preview-eyebrow">Preview</p>
+            <h3 class="preview-title" id="preview-title">—</h3>
+        </div>
+        <div class="preview-actions">
+            <a class="btn btn-ghost btn-small" id="preview-open-tab" href="#" target="_blank" rel="noopener">Open in new tab</a>
+            <button class="btn btn-ghost btn-small" id="btn-close-preview" type="button">Close ×</button>
+        </div>
+    </header>
+    <iframe id="pdf-preview" src="about:blank" title="PDF preview"></iframe>
+</aside>
+
+<footer class="colophon">
+    <div class="rule"></div>
+    <div class="colophon-inner">
+        <p class="colophon-left">FYS Packet Creator · Compiled by the office of the First-Year Seminar Program</p>
+        <p class="colophon-right">Set in <em>Fraunces</em> &amp; <em>Crimson Pro</em></p>
+    </div>
+</footer>
+
+<script src="/static/app.js"></script>
 </body>
 </html>
