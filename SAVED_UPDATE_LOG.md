@@ -114,6 +114,63 @@ confidently matched to a row in SAVED.xlsx. Enter them manually.
 
 ---
 
+### Note for Sabrina (June 2026)
+
+Non-FAS packets are shaky -- they were a lower priority when this was built. It is good to double
+check with Ofrit and flesh those out before relying on them.
+
+---
+
+### Joint Appointment Verification (26-27 Column)
+
+When the 2026-27 column was initially written, some professors were marked X* based on how they
+appear in SAVED (i.e., listed in 2+ departments). However, some of those multi-department listings
+in SAVED are themselves errors or outdated. Two confirmed incorrect joint labels found in June 2026:
+
+- **Becker, A** -- listed in both ANTH and HMS in SAVED, but she is HMS only. Not joint.
+- **Farrell, B** -- listed in both EPS and OEB in SAVED, but he is OEB only. Not joint.
+
+As a result, ALL X* markers in the 2026-27 column were reset to X (June 2026) so that joint
+status can be re-verified by hand before publishing. Below is the full list of everyone who had
+been marked X*, grouped by appointment type:
+
+**Joint appointment (appeared in 2+ dept rows in SAVED):**
+
+| Professor | Departments labeled in SAVED |
+|-----------|------------------------------|
+| Abe, R | EASIAN + STUOFREL |
+| Becker, A | ANTH + HMS (confirmed NOT joint -- HMS only) |
+| Brown-Nagin, T | HIST + HLS |
+| Davis, C | Gov + OEB |
+| Deming, D | HKS + HGSE |
+| Farrell, B | EPS + OEB (confirmed NOT joint -- OEB only) |
+| Finkbeiner, D | ASTRO + PHYS |
+| Kelsey, R | HAA + TDM |
+| Lamberth, D | HDS + STUOFREL |
+| Lewis, S | AAAS + HAA |
+| Manuelian, P | ANTH + NELC |
+| Patton, K | HDS + STUOFREL |
+| Reinert, S | HBS + HIST |
+| Shelby, T | AAAS + PHIL |
+| Straneo, F | EPS + SEAS |
+| Wang, E | HAA + STUOFREL + TDM |
+| Zeghal, M | NELC + STUOFREL |
+
+**Co-teaching only (appeared in 1 dept row in SAVED -- X* is for co-teaching, not joint appt):**
+
+| Professor | Dept | Co-teaches with |
+|-----------|------|-----------------|
+| Kahne, D | CHEM | Verschave, S (seminar 52T) |
+| Lichtman, J | MCB | McCarty, L (seminar 58C) |
+| Murthy, V | MCB | Katie Quast (seminar 54F -- Quast not yet in SAVED) |
+| Verschave, S | MCB | Kahne, D (seminar 52T) |
+| McCarty, L | PHYS | Lichtman, J (seminar 58C) |
+
+The co-teaching X* entries are straightforward. The joint appointment entries above need human
+verification against the current faculty directory before being restored to X*.
+
+---
+
 ### Edge Case Notes
 
 - **Short or common names (e.g., Lee, J):** Multiple people with the same last name and
