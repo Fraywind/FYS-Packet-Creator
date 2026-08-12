@@ -113,6 +113,7 @@ def generate_packets():
 
     # Generate PDFs for each department
     excluded_present = []
+    oversized_titles = set()
     for dept in sorted(all_depts):
         if not dept or dept == 'nan':
             continue
@@ -189,7 +190,7 @@ def generate_packets():
         if holygrail_df is not None:
             try:
                 pdf7_path = os.path.join(dept_folder, f"7. [{sanitized}] 2025\u20132026 Enrollment and Evaluations.pdf")
-                create_pdf7(dept, pdf7_path, holygrail_df)
+                oversized_titles.update(create_pdf7(dept, pdf7_path, holygrail_df) or [])
                 dept_pdfs.append('PDF 7')
                 results['pdfs_generated'] += 1
             except Exception as e:
@@ -228,6 +229,15 @@ def generate_packets():
                 '(kept in the data for documentation/accounting only):',
             ]
             lines += [f'  - {d}' for d in sorted(set(excluded_present))]
+        if oversized_titles:
+            lines += [
+                '',
+                'Seminar titles too long to fit on one line even at the smallest',
+                'readable size. These wrapped onto a second line. To keep them on one',
+                'line, add a shortened form to TITLE_OVERRIDES in generators/shared.py',
+                '(cut at the title\'s own colon or dash, do not paraphrase):',
+            ]
+            lines += [f'  - {t}' for t in sorted(oversized_titles)]
         if results['errors']:
             lines += ['', 'Errors during generation:']
             lines += [f'  - {e}' for e in results['errors']]

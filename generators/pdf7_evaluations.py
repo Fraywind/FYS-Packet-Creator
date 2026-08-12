@@ -1,6 +1,8 @@
 """PDF 7: Enrollment and Evaluations - Table from HOLYGRAIL.xlsx."""
 
 import os
+from xml.sax.saxutils import escape
+
 import pandas as pd
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle
@@ -9,7 +11,13 @@ from reportlab.lib.units import inch
 from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
-from .shared import ACRONYM_TO_FULL, sanitize_department_name
+from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
+                     fit_seminar_title, TITLE_OVERRIDES)
+
+# Table cell padding, needed both by the TableStyle and by the title fitting so
+# the two agree on how much room a title actually has.
+LEFT_PADDING = 4
+RIGHT_PADDING = 4
 
 
 def load_holygrail_data(file_path):
@@ -106,14 +114,12 @@ def create_pdf7(department, output_path, df):
 
     expected_columns = ['Seminar #', 'Seminar Title', 'Professor', 'Term',
                         '# of Apps', 'Enrolled', 'Seminar Q', 'Instructor Q']
-    table_data = [expected_columns]
-    max_title_length = 0
+    raw_rows = []
     max_professor_length = 0
 
     for _, row in data_sorted.iterrows():
         sem_num = str(row.get(column_mapping.get('Seminar #', 'SEM#'), ''))
         title_text = str(row.get(column_mapping.get('Seminar Title', 'TITLE'), ''))
-        max_title_length = max(max_title_length, len(title_text))
 
         fname = str(row.get('FIRST  NAME', ''))
         lname = str(row.get('LAST NAME', ''))
@@ -126,34 +132,13 @@ def create_pdf7(department, output_path, df):
         sem_q = str(row.get(column_mapping.get('Seminar Q', 'SEMQ'), ''))
         inst_q = str(row.get(column_mapping.get('Instructor Q', 'INST Q'), ''))
 
-        table_data.append([sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q])
+        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q])
 
-    table = Table(table_data)
-
-    style = TableStyle([
-        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B0000')),
-        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
-        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
-        ('ALIGN', (1, 1), (1, -1), 'LEFT'),
-        ('ALIGN', (2, 1), (2, -1), 'LEFT'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (1, 1), (1, -1), 'Helvetica'),
-        ('FONTNAME', (2, 1), (2, -1), 'Helvetica-Bold'),
-        ('FONTNAME', (3, 1), (-1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
-        ('FONTSIZE', (0, 1), (0, -1), 10),
-        ('FONTSIZE', (2, 1), (-1, -1), 10),
-        ('FONTSIZE', (1, 1), (1, -1), 8),
-        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
-        ('BOX', (0, 0), (-1, -1), 1, colors.black),
-        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
-        ('TOPPADDING', (0, 0), (-1, -1), 4),
-        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
-    ])
-    table.setStyle(style)
+    # Width is measured against the titles as they will actually print, so a
+    # shortened title does not reserve space for its full original length.
+    max_title_length = max(
+        (len(TITLE_OVERRIDES.get(r[1].strip(), r[1]).strip()) for r in raw_rows),
+        default=0)
 
     # Dynamic column widths
     optimal_title = max(2.5, min(5.0, (max_title_length * 0.055) + 0.4))
@@ -175,7 +160,51 @@ def create_pdf7(department, output_path, df):
 
     col_widths = [0.9 * inch, optimal_title * inch, optimal_prof * inch,
                   0.6 * inch, 0.8 * inch, 0.8 * inch, 1.0 * inch, 1.0 * inch]
-    table._argW = col_widths
+
+    # Titles are Paragraphs rather than plain strings: a plain string does not
+    # wrap and prints straight over the Professor column when it is too long.
+    # fit_seminar_title shrinks it to stay on one line where it reasonably can.
+    title_space = (optimal_title * inch) - (LEFT_PADDING + RIGHT_PADDING)
+    table_data = [expected_columns]
+    oversized_titles = []
+
+    for sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q in raw_rows:
+        text, size, fits = fit_seminar_title(title_text, title_space)
+        if not fits:
+            oversized_titles.append(title_text.strip())
+        title_style = ParagraphStyle(f'Title{size}', parent=styles['Normal'],
+                                     fontName='Helvetica', fontSize=size,
+                                     leading=size + 1.5, alignment=TA_LEFT)
+        table_data.append([sem_num, Paragraph(escape(text), title_style), professor,
+                           term, apps, enrolled, sem_q, inst_q])
+
+    table = Table(table_data, colWidths=col_widths)
+
+    style = TableStyle([
+        ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B0000')),
+        ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
+        ('ALIGN', (0, 0), (-1, -1), 'CENTER'),
+        ('ALIGN', (1, 1), (1, -1), 'LEFT'),
+        ('ALIGN', (2, 1), (2, -1), 'LEFT'),
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (1, 1), (1, -1), 'Helvetica'),
+        ('FONTNAME', (2, 1), (2, -1), 'Helvetica-Bold'),
+        ('FONTNAME', (3, 1), (-1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), 10),
+        ('FONTSIZE', (0, 1), (0, -1), 10),
+        ('FONTSIZE', (2, 1), (-1, -1), 10),
+        # Column 1 is a Paragraph and carries its own per-row font size.
+        ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
+        ('BOX', (0, 0), (-1, -1), 1, colors.black),
+        ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
+        ('LEFTPADDING', (0, 0), (-1, -1), LEFT_PADDING),
+        ('RIGHTPADDING', (0, 0), (-1, -1), RIGHT_PADDING),
+        ('TOPPADDING', (0, 0), (-1, -1), 4),
+        ('BOTTOMPADDING', (0, 0), (-1, -1), 4),
+    ])
+    table.setStyle(style)
 
     story.append(table)
     doc.build(story)
+    return oversized_titles
