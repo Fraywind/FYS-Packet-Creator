@@ -59,17 +59,19 @@ def create_pdf6(department, output_path, df):
     story = []
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'],
-                                 fontSize=20, spaceAfter=10, alignment=TA_CENTER,
-                                 fontName='Helvetica-Bold')
-    dept_style = ParagraphStyle('DeptSub', parent=styles['Heading2'],
-                                fontSize=20, spaceAfter=20, alignment=TA_CENTER,
+    # Department name on top: larger, crimson.
+    dept_style = ParagraphStyle('DeptTitle', parent=styles['Heading1'],
+                                fontSize=24, spaceAfter=10, alignment=TA_CENTER,
                                 textColor=colors.HexColor('#8B0000'),
                                 fontName='Helvetica-Bold')
+    # Report name below: smaller, black.
+    subtitle_style = ParagraphStyle('SubTitle', parent=styles['Heading2'],
+                                    fontSize=16, spaceAfter=20, alignment=TA_CENTER,
+                                    fontName='Helvetica-Bold')
 
-    story.append(Paragraph("2025\u20132026 Enrollment Report", title_style))
     full_dept_name = ACRONYM_TO_FULL.get(department, department)
     story.append(Paragraph(full_dept_name, dept_style))
+    story.append(Paragraph("2025\u20132026 Enrollment Report", subtitle_style))
     story.append(Spacer(1, 40))
 
     if dept_data.empty:

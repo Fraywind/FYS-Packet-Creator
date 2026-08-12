@@ -9,13 +9,15 @@ import shutil
 import zipfile
 import tempfile
 import traceback
+import datetime
 from io import BytesIO
 from flask import Flask, render_template, request, jsonify, send_file, send_from_directory
 import pandas as pd
 
 from generators.shared import ACRONYM_TO_FULL, sanitize_department_name
 from generators.pdf1_seminar_counts import create_pdf1
-from generators.pdf2_faculty_rank import create_pdf2
+from generators.pdf2_faculty_rank import create_pdf2, compute_faculty_rank_data
+from generators.pdf3_graph import create_pdf3
 from generators.pdf4_rank_aggregator import create_pdf4, read_excel_data_by_department
 from generators.pdf5_faculty_table import create_pdf5
 from generators.pdf5_faculty_table import read_excel_data_by_department as read_pdf5_data
@@ -28,6 +30,11 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
 
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
+
+# Departments that exist in the source data for documentation/accounting but
+# should NOT get a packet produced. Recorded in output.txt so it is clear the
+# omission is intentional, not a failure.
+EXCLUDED_DEPTS = {'Committee on Degrees in Social Studies'}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 os.makedirs(OUTPUT_DIR, exist_ok=True)
@@ -72,10 +79,15 @@ def generate_packets():
     # Determine departments from uploaded files
     saved_headers = None
     saved_data_by_dept = None
+    faculty_rank_data = None
     if os.path.exists(saved_path):
         try:
             saved_headers, saved_data_by_dept = read_excel_data_by_department(saved_path)
             all_depts.update(saved_data_by_dept.keys())
+            # PDF 2 is program-wide; compute its rank breakdown once from every
+            # department's rows so each year (incl. the newest) is data-driven.
+            all_saved_rows = [row for rows in saved_data_by_dept.values() for row in rows]
+            faculty_rank_data = compute_faculty_rank_data(all_saved_rows)
         except Exception as e:
             results['errors'].append(f"Error reading SAVED.xlsx: {str(e)}")
 
@@ -100,8 +112,13 @@ def generate_packets():
                         'message': 'No departments found. Please upload at least one spreadsheet.'})
 
     # Generate PDFs for each department
+    excluded_present = []
     for dept in sorted(all_depts):
         if not dept or dept == 'nan':
+            continue
+
+        if dept.strip() in EXCLUDED_DEPTS:
+            excluded_present.append(dept.strip())
             continue
 
         sanitized = sanitize_department_name(dept)
@@ -122,11 +139,21 @@ def generate_packets():
 
             try:
                 pdf2_path = os.path.join(dept_folder, f"2. [{sanitized}] % of Seminars According to Faculty Rank.pdf")
-                create_pdf2(dept, pdf2_path)
+                create_pdf2(dept, pdf2_path, faculty_rank_data)
                 dept_pdfs.append('PDF 2')
                 results['pdfs_generated'] += 1
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 2: {str(e)}")
+
+        # PDF 3 (3D graph of seminars per year - from SAVED.xlsx)
+        if saved_data_by_dept and dept in saved_data_by_dept:
+            try:
+                pdf3_path = os.path.join(dept_folder, f"3. [{sanitized}] Seminars Taught per Year (3D Graph).pdf")
+                create_pdf3(dept, pdf3_path, saved_data_by_dept[dept])
+                dept_pdfs.append('PDF 3')
+                results['pdfs_generated'] += 1
+            except Exception as e:
+                results['errors'].append(f"[{dept}] PDF 3: {str(e)}")
 
         # PDF 4 (Rank Aggregator - from SAVED.xlsx)
         if saved_data_by_dept and dept in saved_data_by_dept:
@@ -161,7 +188,7 @@ def generate_packets():
         # PDF 7 (Evaluations - from HOLYGRAIL.xlsx)
         if holygrail_df is not None:
             try:
-                pdf7_path = os.path.join(dept_folder, f"7. [{sanitized}] 2024\u20132025 Enrollment and Evaluations.pdf")
+                pdf7_path = os.path.join(dept_folder, f"7. [{sanitized}] 2025\u20132026 Enrollment and Evaluations.pdf")
                 create_pdf7(dept, pdf7_path, holygrail_df)
                 dept_pdfs.append('PDF 7')
                 results['pdfs_generated'] += 1
@@ -183,6 +210,47 @@ def generate_packets():
                 'full_name': ACRONYM_TO_FULL.get(dept, dept),
                 'pdfs': dept_pdfs
             })
+
+    # Write a plain-text note so anyone browsing output/ understands what was
+    # produced and, importantly, what was intentionally left out.
+    try:
+        produced = [d['name'] for d in results['departments']]
+        lines = [
+            'FYS Packet Creator — generation notes',
+            f'Generated: {datetime.datetime.now():%Y-%m-%d %H:%M}',
+            '',
+            f'Departments with packets produced: {len(produced)}',
+        ]
+        if excluded_present:
+            lines += [
+                '',
+                'Present in the source data but intentionally NOT produced as packets',
+                '(kept in the data for documentation/accounting only):',
+            ]
+            lines += [f'  - {d}' for d in sorted(set(excluded_present))]
+        if results['errors']:
+            lines += ['', 'Errors during generation:']
+            lines += [f'  - {e}' for e in results['errors']]
+        # Year-dependent labels that are hardcoded and must be bumped by +1 each
+        # cycle. Page 2 is computed from the master and needs no edit. Listed here
+        # so whoever runs this next year knows exactly what to change.
+        lines += [
+            '',
+            'HEADS UP FOR NEXT YEAR (labels shift +1 every cycle):',
+            '  These are hardcoded and NOT auto-derived — update them for the next packet:',
+            '  - Page 1 chart: add the new academic year + its seminar count in',
+            '      generators/pdf1_seminar_counts.py (DEFAULT_YEARS and DEFAULT_COUNTS).',
+            '      This cycle: 26-27 = 117.',
+            '  - Page 6 title year: generators/pdf6_enrollment.py ("2025–2026 Enrollment Report").',
+            '  - Page 7 title year: generators/pdf7_evaluations.py ("2025–2026 Enrollment and',
+            '      Evaluations") and its output filename in app.py.',
+            '  - Page 2 (% by rank) is computed from the master spreadsheet — no manual edit,',
+            '      it picks up the newest year column automatically.',
+        ]
+        with open(os.path.join(OUTPUT_DIR, 'output.txt'), 'w') as fh:
+            fh.write('\n'.join(lines) + '\n')
+    except Exception as e:
+        results['errors'].append(f'output.txt: {str(e)}')
 
     return jsonify({'status': 'ok', 'results': results})
 
