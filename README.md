@@ -47,10 +47,10 @@ PDF 3 (3D Map) is not produced by this tool. See the handbook for the recommende
 
 ## Documentation
 
-For complete instructions, the spreadsheet formats, where the files come from, and a yearly maintenance checklist, read the handbook:
+For complete instructions, the spreadsheet formats, where the files come from, and a yearly maintenance checklist, read the staff guide:
 
-- While the app is running, click "Read the handbook" in the top right of the page.
-- Or open `static/docs.html` directly in any browser (no server needed).
+- While the app is running, click "Read the guide" in the top right of the page.
+- Or open `static/instructions.html` directly in any browser (no server needed).
 
 ## Spreadsheet quick reference
 

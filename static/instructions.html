@@ -1,0 +1,1018 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FYS Packet Creator. Staff guide</title>
+
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:ital,opsz,wght@0,9..144,300..900;1,9..144,300..900&family=Crimson+Pro:ital,wght@0,300..700;1,300..700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+/* Instructions. Editorial typography (mirrors docs.html) */
+:root {
+    --ink:          #1c1917;
+    --ink-soft:     #2c2723;
+    --paper:        #f5f1e6;
+    --paper-soft:   #ede7d4;
+    --paper-deep:   #e3dcc4;
+    --crimson:      #8a1a1a;
+    --crimson-deep: #5e0e0e;
+    --crimson-fade: rgba(138, 26, 26, 0.08);
+    --gold:         #a07a2e;
+    --rule:         #2c2723;
+    --rule-soft:    rgba(44, 39, 35, 0.18);
+    --muted:        #6b6157;
+    --muted-soft:   #8b8275;
+    --ok:           #4a6b3d;
+    --warn:         #a8501f;
+
+    --display: "Fraunces", "Times New Roman", Georgia, serif;
+    --body:    "Crimson Pro", "Iowan Old Style", Cambria, serif;
+    --mono:    "JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html { scroll-behavior: smooth; scroll-padding-top: 2rem; }
+body {
+    background: var(--paper);
+    color: var(--ink);
+    font-family: var(--body);
+    font-size: 19px;
+    line-height: 1.6;
+    letter-spacing: 0.005em;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    position: relative;
+}
+
+::selection { background: var(--crimson); color: var(--paper); }
+
+body::before {
+    content: "";
+    position: fixed; inset: 0; pointer-events: none;
+    z-index: 0; opacity: 0.3;
+    background-image:
+        radial-gradient(circle at 12% 8%, rgba(138,26,26,0.04) 0, transparent 35%),
+        radial-gradient(circle at 88% 80%, rgba(160,122,46,0.05) 0, transparent 40%),
+        url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='160' height='160'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2' seed='3'/><feColorMatrix values='0 0 0 0 0.1 0 0 0 0 0.08 0 0 0 0 0.06 0 0 0 0.18 0'/></filter><rect width='100%' height='100%' filter='url(%23n)'/></svg>");
+    mix-blend-mode: multiply;
+}
+
+.shell {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    grid-template-columns: 260px 1fr;
+    gap: 0;
+    max-width: 1280px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+.sidebar {
+    border-right: 1px solid var(--rule-soft);
+    padding: 3rem 1.6rem 3rem 2.5rem;
+    position: sticky;
+    top: 0;
+    align-self: start;
+    max-height: 100vh;
+    overflow-y: auto;
+}
+
+.brand { margin-bottom: 2rem; }
+.brand-back {
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    text-decoration: none;
+    color: var(--crimson);
+    border-bottom: 1px solid var(--crimson);
+    padding-bottom: 2px;
+}
+.brand-back:hover { color: var(--crimson-deep); border-color: var(--crimson-deep); }
+.brand-title {
+    font-family: var(--body);
+    font-weight: 500;
+    font-style: normal;
+    font-size: 1.2rem;
+    line-height: 1.2;
+    margin-top: 1.1rem;
+    color: var(--ink);
+    letter-spacing: 0.005em;
+}
+.brand-title-sub {
+    display: block;
+    font-family: var(--mono);
+    font-weight: 500;
+    font-size: 0.62rem;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 0.35rem;
+}
+
+.toc-label {
+    font-family: var(--mono);
+    font-size: 0.64rem;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--muted);
+    margin-bottom: 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--rule-soft);
+}
+.toc { list-style: none; }
+.toc li { margin-bottom: 0.5rem; }
+.toc a {
+    display: flex;
+    gap: 0.7rem;
+    align-items: baseline;
+    text-decoration: none;
+    color: var(--ink-soft);
+    font-family: var(--body);
+    font-size: 0.95rem;
+    line-height: 1.3;
+    padding: 0.25rem 0;
+    transition: color 0.15s;
+}
+.toc a:hover { color: var(--crimson); }
+.toc-num {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    color: var(--muted-soft);
+    min-width: 1.8em;
+}
+.toc-sub {
+    padding-left: 2rem;
+    font-size: 0.88rem;
+    color: var(--muted);
+}
+.toc-sub::before { content: ".  "; color: var(--muted-soft); }
+
+.handbook { padding: 4rem 4rem 6rem 4rem; max-width: 880px; }
+
+.eyebrow {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.22em;
+    color: var(--crimson);
+    margin-bottom: 1rem;
+}
+.handbook-title {
+    font-family: var(--display);
+    font-weight: 400;
+    line-height: 0.95;
+    letter-spacing: -0.025em;
+    color: var(--ink);
+    font-variation-settings: "opsz" 144;
+    margin-bottom: 1.4rem;
+}
+.handbook-title .h-the {
+    display: block;
+    font-style: normal;
+    font-weight: 400;
+    font-size: 1.3rem;
+    color: var(--ink-soft);
+    margin-bottom: -0.1rem;
+    font-variation-settings: "opsz" 24;
+    letter-spacing: 0;
+}
+.handbook-title .h-main {
+    display: block;
+    font-size: clamp(3rem, 6vw, 5rem);
+    font-weight: 500;
+}
+
+.lede {
+    font-family: var(--body);
+    font-size: 1.25rem;
+    font-style: italic;
+    color: var(--ink-soft);
+    max-width: 60ch;
+    line-height: 1.5;
+    margin-bottom: 2rem;
+    padding-left: 1.2rem;
+    border-left: 3px solid var(--crimson);
+}
+
+section { margin-top: 4rem; scroll-margin-top: 1.5rem; }
+.sec-head {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 1.4rem;
+    align-items: baseline;
+    margin-bottom: 1.8rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid var(--ink);
+}
+.sec-num {
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 400;
+    font-size: 2.4rem;
+    color: var(--crimson);
+    line-height: 1;
+    font-variation-settings: "opsz" 48;
+}
+.sec-title {
+    font-family: var(--display);
+    font-weight: 400;
+    font-size: 2rem;
+    line-height: 1.05;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    font-variation-settings: "opsz" 72;
+}
+
+h3.sub {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.4rem;
+    line-height: 1.2;
+    color: var(--crimson-deep);
+    margin-top: 2.4rem;
+    margin-bottom: 0.7rem;
+    letter-spacing: -0.01em;
+    font-variation-settings: "opsz" 36;
+}
+h4.subsub {
+    font-family: var(--mono);
+    font-size: 0.74rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--crimson);
+    margin-top: 1.6rem;
+    margin-bottom: 0.6rem;
+    font-weight: 600;
+}
+
+p { margin-bottom: 1rem; max-width: 64ch; }
+.muted { color: var(--muted); font-size: 0.95rem; font-style: italic; }
+strong { font-weight: 600; color: var(--ink); }
+em { font-style: italic; }
+
+code, .mono {
+    font-family: var(--mono);
+    font-size: 0.86em;
+    background: var(--paper-soft);
+    padding: 0.08rem 0.35rem;
+    border-radius: 2px;
+    color: var(--ink);
+    letter-spacing: 0;
+}
+
+.workbook {
+    margin-top: 2rem;
+    padding: 2rem 2rem 1.6rem;
+    background: rgba(255, 252, 244, 0.6);
+    border: 1px solid var(--rule-soft);
+    border-left: 4px solid var(--crimson);
+    border-radius: 2px;
+}
+.workbook-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    flex-wrap: wrap;
+    gap: 0.8rem;
+    margin-bottom: 0.6rem;
+}
+.workbook-name {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.7rem;
+    letter-spacing: -0.015em;
+    color: var(--ink);
+    line-height: 1.1;
+    font-variation-settings: "opsz" 48;
+}
+.workbook-filename {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--paper);
+    background: var(--ink);
+    padding: 0.3rem 0.6rem;
+    border-radius: 1px;
+    letter-spacing: 0.04em;
+}
+.workbook-produces {
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    margin-bottom: 1.2rem;
+}
+.workbook-produces strong { color: var(--crimson); }
+
+table.cols, table.legend, table.summary {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-family: var(--body);
+    font-size: 0.95rem;
+}
+table.cols th, table.legend th, table.summary th {
+    text-align: left;
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--crimson);
+    padding: 0.5rem 0.8rem;
+    border-bottom: 1px solid var(--ink);
+    background: transparent;
+}
+table.cols td, table.legend td, table.summary td {
+    padding: 0.55rem 0.8rem;
+    border-bottom: 1px solid var(--rule-soft);
+    vertical-align: top;
+}
+table.cols td:first-child { font-family: var(--mono); font-size: 0.84rem; color: var(--ink); width: 32%; }
+table.legend td:first-child { font-family: var(--mono); font-weight: 600; color: var(--crimson); width: 22%; }
+table.summary td:first-child { font-family: var(--mono); width: 24%; }
+
+ol.steps {
+    list-style: none;
+    counter-reset: step;
+    margin: 1rem 0 1.5rem;
+}
+ol.steps > li {
+    counter-increment: step;
+    position: relative;
+    padding: 0.8rem 0 0.8rem 4rem;
+    border-bottom: 1px dotted var(--rule-soft);
+    min-height: 3rem;
+}
+ol.steps > li:last-child { border-bottom: none; }
+ol.steps > li::before {
+    content: counter(step, decimal-leading-zero);
+    position: absolute;
+    left: 0;
+    top: 0.8rem;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--crimson);
+    letter-spacing: 0.05em;
+}
+ol.steps > li > strong:first-child {
+    display: block;
+    font-family: var(--display);
+    font-style: italic;
+    font-weight: 500;
+    font-size: 1.15rem;
+    color: var(--ink);
+    margin-bottom: 0.3rem;
+    font-variation-settings: "opsz" 24;
+}
+
+ul.bullets { list-style: none; margin: 0.8rem 0 1.2rem 0.4rem; }
+ul.bullets li {
+    position: relative;
+    padding-left: 1.4rem;
+    margin-bottom: 0.55rem;
+    max-width: 64ch;
+}
+ul.bullets li::before {
+    content: "+";
+    position: absolute;
+    left: 0;
+    color: var(--crimson);
+    font-weight: 600;
+}
+
+.callout {
+    margin: 1.4rem 0;
+    padding: 1.1rem 1.4rem;
+    border-left: 3px solid var(--gold);
+    background: rgba(160, 122, 46, 0.07);
+    font-family: var(--body);
+    font-size: 0.97rem;
+    color: var(--ink-soft);
+}
+.callout strong {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--gold);
+    display: block;
+    margin-bottom: 0.4rem;
+}
+.callout.note { border-color: var(--crimson); background: var(--crimson-fade); }
+.callout.note strong { color: var(--crimson); }
+.callout.warn { border-color: var(--warn); background: rgba(168, 80, 31, 0.08); }
+.callout.warn strong { color: var(--warn); }
+
+.pdf-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 1rem;
+    margin: 1.5rem 0;
+}
+.pdf-card {
+    border: 1px solid var(--rule-soft);
+    border-radius: 2px;
+    padding: 1.2rem 1.2rem 1rem;
+    background: rgba(255, 252, 244, 0.5);
+}
+.pdf-card-num {
+    font-family: var(--display);
+    font-style: italic;
+    font-size: 2rem;
+    color: var(--crimson);
+    line-height: 1;
+    font-variation-settings: "opsz" 36;
+}
+.pdf-card-title {
+    font-family: var(--display);
+    font-weight: 500;
+    font-size: 1.05rem;
+    color: var(--ink);
+    margin: 0.5rem 0 0.4rem;
+    line-height: 1.2;
+    font-variation-settings: "opsz" 24;
+}
+.pdf-card p {
+    font-size: 0.88rem;
+    color: var(--ink-soft);
+    margin-bottom: 0.4rem;
+    max-width: none;
+}
+.pdf-card-src {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--muted);
+}
+
+.colophon {
+    margin-top: 5rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--ink);
+    font-family: var(--mono);
+    font-size: 0.66rem;
+    text-transform: uppercase;
+    letter-spacing: 0.18em;
+    color: var(--muted);
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+.colophon em {
+    font-family: var(--display);
+    font-style: italic;
+    color: var(--ink-soft);
+    text-transform: none;
+    letter-spacing: 0;
+}
+
+@media (max-width: 960px) {
+    .shell { grid-template-columns: 1fr; }
+    .sidebar {
+        position: static;
+        max-height: none;
+        border-right: none;
+        border-bottom: 1px solid var(--rule-soft);
+        padding: 2rem 1.4rem;
+    }
+    .handbook { padding: 3rem 1.4rem 4rem; }
+}
+
+@media (max-width: 520px) {
+    body { font-size: 17px; }
+    .handbook-title .h-main { font-size: 2.6rem; }
+    .sec-head { grid-template-columns: 1fr; gap: 0.4rem; }
+    .sec-num { font-size: 1.8rem; }
+    .sec-title { font-size: 1.6rem; }
+    .workbook { padding: 1.4rem 1.2rem; }
+    .workbook-name { font-size: 1.3rem; }
+    ol.steps > li { padding-left: 3rem; }
+}
+
+/* Print. Tuned for letter-size PDF */
+@page {
+    size: letter;
+    margin: 0.7in 0.75in;
+}
+@media print {
+    html, body { background: var(--paper) !important; }
+    body::before { display: none; }
+    .sidebar { display: none; }
+    .shell { display: block; max-width: 100%; }
+    .handbook { padding: 0; max-width: 100%; }
+    a { color: var(--ink); text-decoration: none; }
+
+    * { -webkit-print-color-adjust: exact !important; print-color-adjust: exact !important; }
+
+    /* Let the text flow down each page instead of forcing every section onto
+       a fresh sheet, which was leaving large blank gaps. Just keep a heading
+       with the text that follows it, and never split a small block in two. */
+    section { margin-top: 2.2rem; break-before: auto; }
+    section:first-of-type { margin-top: 0; }
+    .sec-head { break-after: avoid; break-inside: avoid; }
+    h3.sub, h4.subsub { break-after: avoid; }
+    ol.steps > li > strong:first-child { break-after: avoid; }
+
+    /* Long workbook cards may run onto the next page so nothing gets clipped.
+       Smaller blocks and tables stay whole. */
+    .workbook { break-inside: auto; }
+    .workbook-head { break-after: avoid; }
+    .callout, .pdf-card { break-inside: avoid; }
+    table.cols, table.legend, table.summary { break-inside: avoid; }
+    tr { break-inside: avoid; }
+
+    p, ul.bullets li { max-width: none; orphans: 3; widows: 3; }
+    .pdf-cards { grid-template-columns: repeat(2, 1fr); }
+    .handbook-title .h-main { font-size: 3.2rem; }
+    .lede { font-size: 1.1rem; }
+    .colophon { break-inside: avoid; }
+}
+</style>
+
+</head>
+<body>
+
+<div class="shell">
+
+<aside class="sidebar">
+    <div class="brand">
+        <a class="brand-back" href="/">Back to app</a>
+        <p class="brand-title">Packet Creator<br />Guide<span class="brand-title-sub">Internal. FYSP staff only</span></p>
+    </div>
+
+    <p class="toc-label">Contents</p>
+    <ul class="toc">
+        <li><a href="#what"><span class="toc-num">1</span><span>What this tool does</span></a></li>
+        <li><a href="#produces"><span class="toc-num">2</span><span>What you get out of it</span></a></li>
+        <li><a href="#workbooks"><span class="toc-num">3</span><span>The three input files</span></a></li>
+        <li><a href="#saved" class="toc-sub">Faculty Teaching History</a></li>
+        <li><a href="#applications" class="toc-sub">Recent Applications Count</a></li>
+        <li><a href="#holygrail" class="toc-sub">Past Q Reports</a></li>
+        <li><a href="#running"><span class="toc-num">4</span><span>Running the tool</span></a></li>
+        <li><a href="#pdfs"><span class="toc-num">5</span><span>The seven PDFs explained</span></a></li>
+        <li><a href="#troubleshooting"><span class="toc-num">6</span><span>When something looks wrong</span></a></li>
+        <li><a href="#yearly"><span class="toc-num">7</span><span>Each year, before generating</span></a></li>
+    </ul>
+</aside>
+
+<main class="handbook">
+
+    <p class="eyebrow">Harvard. First-Year Seminar Program. Staff guide</p>
+    <h1 class="handbook-title">
+        <span class="h-the">How to</span>
+        <span class="h-main">Create the Department Packets</span>
+    </h1>
+
+    <p class="lede">
+        Each year the FYSP office puts together a folder of reports, called a &ldquo;packet,&rdquo; for every academic department that offers a first-year seminar. This tool takes three Excel files and builds every department&rsquo;s packet at once. These pages walk you through getting those files ready and running the tool. You do not need any coding background.
+    </p>
+
+    <!-- I -->
+    <section id="what">
+        <header class="sec-head">
+            <span class="sec-num">1.</span>
+            <h2 class="sec-title">What this tool does</h2>
+        </header>
+
+        <p>
+            FYSP packets used to be put together by hand: one folder of reports per department, forty-something departments, every year. This tool does that work automatically. You give it three Excel files that the FYSP office already maintains, and it produces every department&rsquo;s packet in about a minute.
+        </p>
+
+        <p>The three files, named here by what they actually are rather than by their internal filenames:</p>
+        <ul class="bullets">
+            <li><strong>Faculty Teaching History</strong> (<code>SAVED.xlsx</code>). Who taught what, year by year. Produces PDFs 1, 2, 4, 5.</li>
+            <li><strong>Recent Applications Count</strong> (<code>APPLICATION_CURRENT.xlsx</code>). This year&rsquo;s seminars and how popular they were. Produces PDF 6.</li>
+            <li><strong>Past Q Reports</strong> (<code>HOLYGRAIL.xlsx</code>). Last year&rsquo;s enrollment and student evaluations. Produces PDF 7.</li>
+        </ul>
+
+        <div class="callout">
+            <strong>Who this is for</strong>
+            FYSP office staff who run the packets each year, and anyone new who is stepping into that role. The office is small, so this guide is written assuming you may be doing this for the first time. If you get stuck, the person who last ran the packets is the best place to start.
+        </div>
+    </section>
+
+    <!-- II -->
+    <section id="produces">
+        <header class="sec-head">
+            <span class="sec-num">2.</span>
+            <h2 class="sec-title">What you get out of it</h2>
+        </header>
+
+        <p>
+            For each department, for example <code>[ECON]</code> (Economics), <code>[HLS]</code> (Harvard Law School), or <code>[SEAS]</code> (Engineering and Applied Sciences), the tool produces a folder with up to seven PDFs, plus one combined PDF that stitches them together into a single file ready to send.
+        </p>
+
+        <table class="summary">
+            <thead>
+                <tr><th>PDF</th><th>Title</th><th>Comes from</th></tr>
+            </thead>
+            <tbody>
+                <tr><td>1</td><td># of First-Year Seminars by Academic Year</td><td>Faculty Teaching History</td></tr>
+                <tr><td>2</td><td>% of Seminars According to Faculty Rank</td><td>Faculty Teaching History</td></tr>
+                <tr><td>4</td><td>Seminars Taught per Year per Rank</td><td>Faculty Teaching History</td></tr>
+                <tr><td>5</td><td>Faculty Teaching Seminars by Name</td><td>Faculty Teaching History</td></tr>
+                <tr><td>6</td><td>Current Year Enrollment Report</td><td>Recent Applications Count</td></tr>
+                <tr><td>7</td><td>Prior Year Enrollment and Evaluations</td><td>Past Q Reports</td></tr>
+                <tr><td>ALL</td><td>Combined packet (1, 2, 4, 5, 6, 7)</td><td>All three</td></tr>
+            </tbody>
+        </table>
+
+        <div class="callout note">
+            <strong>About PDF 3 (the 3D Map)</strong>
+            PDF 3 is not made by this tool. It is produced separately and added to the combined packet by hand. That is why the numbering in the output skips from 2 to 4.
+        </div>
+    </section>
+
+    <!-- III -->
+    <section id="workbooks">
+        <header class="sec-head">
+            <span class="sec-num">3.</span>
+            <h2 class="sec-title">The three input files</h2>
+        </header>
+
+        <p>
+            Everything the tool knows comes from these three Excel files. They are <strong>not</strong> public exports you download from a Harvard system. They are <strong>internal FYSP office files</strong>, assembled and curated by office staff each year.
+        </p>
+
+        <p>
+            You can run the tool with all three files, or with only one or two. Any file you leave out simply means its reports are skipped, which is handy when you only want to refresh part of the packet.
+        </p>
+
+        <table class="summary">
+            <thead>
+                <tr><th>File</th><th>What we call it here</th><th>Where it comes from</th></tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td>SAVED.xlsx</td>
+                    <td>Faculty Teaching History</td>
+                    <td>Internal FYSP file, updated each year by office staff.</td>
+                </tr>
+                <tr>
+                    <td>APPLICATION_CURRENT.xlsx</td>
+                    <td>Recent Applications Count</td>
+                    <td>Pulled from the FYSP application portal, compiled by office staff each fall. <strong>Request HCIR for this data file.</strong></td>
+                </tr>
+                <tr>
+                    <td>HOLYGRAIL.xlsx</td>
+                    <td>Past Q Reports</td>
+                    <td>Compiled by office staff from the prior year&rsquo;s Q report scores and enrollment. <strong>Request HCIR for this data file.</strong></td>
+                </tr>
+            </tbody>
+        </table>
+
+        <!-- SAVED -->
+        <article id="saved" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Faculty Teaching History</h3>
+                <span class="workbook-filename">SAVED.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDFs 1, 2, 4, 5</strong></p>
+
+            <p>
+                A multi-year record of which faculty member taught a first-year seminar in which year, in which department, at what rank. This is the only file that spans more than a single year, and the most complex of the three.
+            </p>
+
+            <h4 class="subsub">Where to find it</h4>
+            <p>
+                This file stays inside the FYSP office. You do not download it from anywhere. It is a working spreadsheet that office staff keep up to date by hand. If you are taking over, ask whoever last ran the packets for the current copy.
+            </p>
+
+            <h4 class="subsub">What you do to it each year</h4>
+            <p>Before generating packets for a new academic year, the file needs the new year&rsquo;s information added (almost always by hand):</p>
+            <ul class="bullets">
+                <li><strong>Add a new year column on the right</strong>, named like <code>2025-26</code> or <code>2025-2026</code>. The tool will abbreviate it on the PDFs.</li>
+                <li><strong>For each faculty member, mark whether they are teaching a first-year seminar that year</strong> using the notation below.</li>
+                <li><strong>Update ranks.</strong> If a professor was promoted (for example, from Assistant Professor to Associate Professor to full Professor), retired (to Emeritus or Emerita), or left, update the <em>Rank</em> column so this year&rsquo;s rank is correct.</li>
+                <li><strong>Track rank progression for our own records.</strong> If someone started teaching for FYSP as an Assistant Professor and was promoted later, you will see ranks written with a slash, like <code>Assistant Professor / Associate Professor</code>. The slash means they started at the first rank and are now at the second. It is FYSP&rsquo;s own shorthand, not a joint appointment.</li>
+                <li><strong>Add new hires.</strong> If a department brought in new faculty teaching a seminar this year, add a new row.</li>
+            </ul>
+
+            <div class="callout">
+                <strong>Updating ranks is the slowest step</strong>
+                Going through every faculty row to check promotions, retirements, and departures takes longer than anything else here. Two things make it quicker. First, you only really need to update the people teaching this year; everyone else can wait until they teach again. Second, you can ask HCIR for a list of faculty whose rank changed over the past year, then use that list to update the Rank column instead of checking each person one by one.
+            </div>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>Professor</td><td>Faculty name (free-form text).</td></tr>
+                    <tr><td>Rank</td><td>Current rank. See the slash notes above for progression.</td></tr>
+                    <tr><td>Department</td><td>Department name spelled out (for example, <em>Economics</em>, not <em>ECON</em>). The tool maps full names to acronyms internally.</td></tr>
+                    <tr><td>One column per academic year</td><td>For example <code>2014-15</code> through <code>2025-26</code>. Each cell uses the notation below.</td></tr>
+                </tbody>
+            </table>
+
+            <h4 class="subsub">Notation in the year cells</h4>
+            <table class="legend">
+                <thead><tr><th>Symbol</th><th>Meaning</th></tr></thead>
+                <tbody>
+                    <tr><td>X</td><td>Taught one section that year.</td></tr>
+                    <tr><td>XX</td><td>Taught two sections that year.</td></tr>
+                    <tr><td>X*</td><td>Joint instruction or co-teaching. Counted as half a seminar.</td></tr>
+                    <tr><td>X!</td><td>For ranks written with a slash. The lower rank gets credit. Example: <code>Assistant Professor / Associate Professor</code> with <code>X!</code> credits Assistant.</td></tr>
+                    <tr><td>X!!</td><td>For ranks written with a slash. The higher rank gets credit.</td></tr>
+                    <tr><td>X*!</td><td>Joint co-teaching <em>and</em> a slashed rank. Half credit to the lower rank.</td></tr>
+                    <tr><td>(blank)</td><td>Did not teach that year.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout note">
+                <strong>A note on accuracy</strong>
+                Every report from this file depends on these notations being correct. If you are unsure about a row, leave the cell blank and flag it for yourself (a highlight, a sticky note, a note in another column). A missing seminar is easier to catch than a miscredited one.
+            </div>
+        </article>
+
+        <!-- APPLICATION_CURRENT -->
+        <article id="applications" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Recent Applications Count</h3>
+                <span class="workbook-filename">APPLICATION_CURRENT.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDF 6</strong>. Current Year Enrollment Report</p>
+
+            <p>
+                A roster of every first-year seminar offered this academic year, with how many students applied and how many were placed. The basis for the popularity story the packet tells each department: which seminars were oversubscribed, which were not.
+            </p>
+
+            <h4 class="subsub">Where it comes from</h4>
+            <p>
+                It comes partly from the FYSP application portal. Student applications are exported from there after the placement deadline, and the office then edits and consolidates that export into a single working spreadsheet. <strong>Request this data file from HCIR.</strong>
+            </p>
+
+            <h4 class="subsub">What &ldquo;Total Appl Count&rdquo; vs. &ldquo;Placed&rdquo; mean</h4>
+            <ul class="bullets">
+                <li><strong>Total Appl Count</strong> (also &ldquo;# of Apps&rdquo;) is how many students <em>applied</em> for the seminar. Because students rank multiple seminars, this number can be higher than the number who actually take the course.</li>
+                <li><strong>Placed</strong> (also &ldquo;Enrolled&rdquo;) is how many students were <em>placed</em> in the seminar after the lottery, measured at the fall course registration deadline.</li>
+            </ul>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>Department</td><td>Full department name. Joint departments may be written as <code>Department A / Department B</code>. The tool splits these.</td></tr>
+                    <tr><td>Sem#</td><td>Seminar number, for example <code>15K</code>, <code>32T</code>.</td></tr>
+                    <tr><td>Term</td><td><em>Fall</em> or <em>Spring</em>.</td></tr>
+                    <tr><td>Title</td><td>Full seminar title.</td></tr>
+                    <tr><td>Fname</td><td>Instructor first name.</td></tr>
+                    <tr><td>LName</td><td>Instructor last name.</td></tr>
+                    <tr><td>Total Appl Count</td><td>Number of applications.</td></tr>
+                    <tr><td>Placed</td><td>Number of students placed.</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout">
+                <strong>Cancelled or unrun seminars</strong>
+                Rows with <code>NO PACKET</code> in any column are dropped automatically. Use this if you need to keep a row in the file but exclude it from the reports.
+            </div>
+        </article>
+
+        <!-- HOLYGRAIL -->
+        <article id="holygrail" class="workbook">
+            <header class="workbook-head">
+                <h3 class="workbook-name">Past Q Reports</h3>
+                <span class="workbook-filename">HOLYGRAIL.xlsx</span>
+            </header>
+            <p class="workbook-produces">Produces <strong>PDF 7</strong>. Prior Year Enrollment and Evaluations</p>
+
+            <p>
+                A consolidated record of <em>last year&rsquo;s</em> first-year seminars: how many students applied, how many enrolled, and how students rated each seminar and instructor on the Q report. This is what departments look at to judge how their seminars actually went.
+            </p>
+
+            <h4 class="subsub">Where it comes from</h4>
+            <p>
+                Assembled by the FYSP office at the end of each academic year. It draws from two sources:
+            </p>
+            <ul class="bullets">
+                <li><strong>Q report evaluation scores</strong> for each seminar, from the student course evaluation system.</li>
+                <li><strong>Enrollment numbers</strong> from the prior year&rsquo;s Recent Applications Count file. In effect, this year&rsquo;s Past Q Reports is largely last year&rsquo;s Recent Applications Count with Q scores merged in.</li>
+            </ul>
+            <p><strong>Request HCIR for this data file.</strong></p>
+
+            <h4 class="subsub">Required columns</h4>
+            <table class="cols">
+                <thead><tr><th>Column header</th><th>What goes in it</th></tr></thead>
+                <tbody>
+                    <tr><td>DEPT</td><td>Full department name. Joint departments split on <code> / </code>.</td></tr>
+                    <tr><td>SEM#</td><td>Seminar number.</td></tr>
+                    <tr><td>TERM</td><td><em>Fall</em> or <em>Spring</em>.</td></tr>
+                    <tr><td>TITLE</td><td>Seminar title.</td></tr>
+                    <tr><td>FIRST  NAME</td><td>Instructor first name. <em>Note: this header has two spaces between &ldquo;FIRST&rdquo; and &ldquo;NAME&rdquo;.</em></td></tr>
+                    <tr><td>LAST NAME</td><td>Instructor last name.</td></tr>
+                    <tr><td>APPL#</td><td>Number of applications.</td></tr>
+                    <tr><td>ENROLL</td><td>Number of students enrolled.</td></tr>
+                    <tr><td>SEMQ</td><td>Seminar Q score (student rating of the seminar).</td></tr>
+                    <tr><td>INST Q</td><td>Instructor Q score (student rating of the instructor).</td></tr>
+                </tbody>
+            </table>
+
+            <div class="callout warn">
+                <strong>About the filename</strong>
+                The file is named <code>HOLYGRAIL.xlsx</code> for historical reasons. The tool expects this file to be uploaded into the &ldquo;Past Q Reports&rdquo; slot regardless of what the actual filename is on disk.
+            </div>
+        </article>
+    </section>
+
+    <!-- IV -->
+    <section id="running">
+        <header class="sec-head">
+            <span class="sec-num">4.</span>
+            <h2 class="sec-title">Running the tool</h2>
+        </header>
+
+        <p>
+            Once the three files are ready, the rest is quick, usually under a minute from start to finish. The tool runs in your web browser, so there is nothing to install beyond starting the server (ask whoever set the tool up for you if you are not sure how).
+        </p>
+
+        <ol class="steps">
+            <li>
+                <strong>Open the application.</strong>
+                Go to the URL the office has set up for the tool. If the page does not load, see section 6.
+            </li>
+            <li>
+                <strong>Upload your files.</strong>
+                Drag each file onto its labeled box, or click to browse. You can upload one, two, or all three. Missing files just skip their reports. The tool accepts <code>.xlsx</code> and <code>.xls</code>.
+            </li>
+            <li>
+                <strong>Click &ldquo;Compose packets&rdquo;.</strong>
+                The button becomes active once at least one file is loaded. Generation takes ten to thirty seconds depending on how many departments are in your files.
+            </li>
+            <li>
+                <strong>Browse the department list.</strong>
+                Every department with data appears in a list, with a count of how many PDFs were produced. You can search by code (e.g. <code>ECON</code>) or full name, and sort by code, name, or PDF count.
+            </li>
+            <li>
+                <strong>Preview each PDF in the browser.</strong>
+                Click any PDF in a department row to open it in the side panel without downloading. Click &ldquo;Preview combined&rdquo; to see the stitched-together packet for a department. Press <kbd>Esc</kbd> to close.
+            </li>
+            <li>
+                <strong>Download.</strong> Either download a single department&rsquo;s ZIP from its row, or use &ldquo;Download all (ZIP)&rdquo; at the top of the index to grab every department at once. The ZIP preserves the <code>[DEPT]/</code> folder structure.
+            </li>
+        </ol>
+
+        <div class="callout">
+            <strong>Re-running</strong>
+            You can re-run with different files at any time. The previous output is cleared automatically. Use the &ldquo;Clear&rdquo; button if you want to start over without uploading.
+        </div>
+    </section>
+
+    <!-- V -->
+    <section id="pdfs">
+        <header class="sec-head">
+            <span class="sec-num">5.</span>
+            <h2 class="sec-title">The seven PDFs explained</h2>
+        </header>
+
+        <p>
+            Each department&rsquo;s folder contains the following PDFs, named consistently. PDF 3 is intentionally missing. It is the 3D Map, which is produced separately, outside this tool.
+        </p>
+
+        <div class="pdf-cards">
+            <article class="pdf-card">
+                <span class="pdf-card-num">1.</span>
+                <h4 class="pdf-card-title"># of First-Year Seminars by Academic Year</h4>
+                <p>A bar chart of how many seminars the department offered each year.</p>
+                <p class="pdf-card-src">From Faculty Teaching History</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">2.</span>
+                <h4 class="pdf-card-title">% of Seminars According to Faculty Rank</h4>
+                <p>Who taught (Professors, Associate, Lecturers, Visiting) as a share of the department&rsquo;s seminars.</p>
+                <p class="pdf-card-src">From Faculty Teaching History</p>
+            </article>
+
+            <article class="pdf-card" style="opacity:0.5">
+                <span class="pdf-card-num">3.</span>
+                <h4 class="pdf-card-title">3D Map of Seminars</h4>
+                <p><em>Not produced by this tool. Created separately.</em></p>
+                <p class="pdf-card-src">External</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">4.</span>
+                <h4 class="pdf-card-title">Seminars Taught per Year per Rank</h4>
+                <p>A full table. Rows are rank categories, columns are years, cells are counts (with halves for co-teaching).</p>
+                <p class="pdf-card-src">From Faculty Teaching History</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">5.</span>
+                <h4 class="pdf-card-title">Faculty Teaching Seminars by Name</h4>
+                <p>A detailed table listing every faculty member and the years in which they taught.</p>
+                <p class="pdf-card-src">From Faculty Teaching History</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">6.</span>
+                <h4 class="pdf-card-title">Current Year Enrollment Report</h4>
+                <p>This year&rsquo;s seminars: title, instructor, term, applications, students placed.</p>
+                <p class="pdf-card-src">From Recent Applications Count</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">7.</span>
+                <h4 class="pdf-card-title">Prior Year Enrollment and Evaluations</h4>
+                <p>Last year&rsquo;s seminars with applications, enrollment, and Q report scores for seminar and instructor.</p>
+                <p class="pdf-card-src">From Past Q Reports</p>
+            </article>
+
+            <article class="pdf-card">
+                <span class="pdf-card-num">ALL</span>
+                <h4 class="pdf-card-title">Combined packet</h4>
+                <p>PDFs 1, 2, 4, 5, 6, 7 stitched together into a single file for sending or printing.</p>
+                <p class="pdf-card-src">All sources</p>
+            </article>
+        </div>
+    </section>
+
+    <!-- VI -->
+    <section id="troubleshooting">
+        <header class="sec-head">
+            <span class="sec-num">6.</span>
+            <h2 class="sec-title">When something looks wrong</h2>
+        </header>
+
+        <h3 class="sub">The page won&rsquo;t load</h3>
+        <p>
+            The tool needs to be running on a server. If it is hosted by the office, contact whoever set up the hosting. If you are running it on your own machine, ask that person to start it for you, or follow the start instructions they gave you. Leave that window open while you use the tool.
+        </p>
+
+        <h3 class="sub">Generation finished but a department is missing</h3>
+        <p>
+            The most common cause is a spelling difference in the <em>Department</em> column. The tool matches department names against an internal list (for instance, <em>Government</em> maps to <code>GOV</code>; <em>Economics</em> maps to <code>ECON</code>). If a department name is misspelled or abbreviated in your spreadsheet, the tool will still create a folder for it but may not match it to the proper acronym. Check the &ldquo;Warnings&rdquo; shelf at the bottom of the results page for clues.
+        </p>
+
+        <h3 class="sub">A PDF says &ldquo;No data available&rdquo;</h3>
+        <p>
+            The tool found a department in one file but no matching rows in the file for that PDF. For example, PDF 6 says &ldquo;no data&rdquo; for <code>[ANTH]</code>. That means Faculty Teaching History had Anthropology, but Recent Applications Count had no Anthropology rows this year. This is expected when a department is not running a seminar this year.
+        </p>
+
+        <h3 class="sub">A warning appears about reading a file</h3>
+        <p>
+            Open the file in Excel and check the column headers against the tables in section 3. The most common culprits are a renamed header (for example, <code>Department Name</code> instead of <code>Department</code>) or a stray blank column.
+        </p>
+
+        <h3 class="sub">Faculty appear in the wrong rank category</h3>
+        <p>
+            Check the Rank column in Faculty Teaching History. The categorization rules are listed in the Legend on the bottom of PDF 4. Common surprises: <em>Senior Lecturer</em>, <em>Senior Preceptor</em>, <em>Professor of the Practice</em>, and <em>Professor in Residence</em> are all grouped together. Anything with <em>Visiting</em> in the title goes to <em>Visiting (all levels)</em>.
+        </p>
+    </section>
+
+    <!-- VII -->
+    <section id="yearly">
+        <header class="sec-head">
+            <span class="sec-num">7.</span>
+            <h2 class="sec-title">Each year, before generating</h2>
+        </header>
+
+        <p>
+            Before each year&rsquo;s packet run, the office&rsquo;s working files need attention. Use this as a checklist.
+        </p>
+
+        <ol class="steps">
+            <li>
+                <strong>Update Faculty Teaching History for the new year.</strong>
+                Add a new year column on the right. Fill in the <code>X</code>, <code>XX</code>, <code>X*</code>, <code>X!</code>, <code>X!!</code> notation for every faculty member who taught. Promote, retire, or remove faculty whose status changed, and add any new hires. This is the slowest step, so consider updating only the faculty teaching this year first and revisiting the rest later. You can also ask HCIR for a list of faculty whose rank changed, which saves you from checking each person by hand.
+            </li>
+            <li>
+                <strong>Get Recent Applications Count for the new year.</strong>
+                Once the lottery is finalized, request the data file from HCIR. Clean and merge it into the same column shape described in section 3.
+            </li>
+            <li>
+                <strong>Get Past Q Reports for the prior year.</strong>
+                Take last year&rsquo;s Recent Applications Count file, merge in the Q report scores for each seminar (request these from HCIR), and save as the new Past Q Reports file. This is the most time-consuming step.
+            </li>
+            <li>
+                <strong>Ask whoever maintains the tool to update the year titles, if needed.</strong>
+                The PDF 6 and PDF 7 titles include literal year ranges (for example, &ldquo;2025 to 2026 Enrollment Report&rdquo;). When a new academic year begins, those titles have to be updated. It is a small change in the tool&rsquo;s code, so it is not something you need to do yourself, but it is worth flagging to whoever maintains the tool.
+            </li>
+            <li>
+                <strong>Run the tool, review, and distribute.</strong> Generate packets, spot-check a few departments (especially any with unusual slashed ranks), then download and email out.
+            </li>
+        </ol>
+    </section>
+
+    <footer class="colophon">
+        <p>FYS Packet Creator. Staff guide.</p>
+        <p>Set in <em>Fraunces</em> and <em>Crimson Pro</em></p>
+    </footer>
+
+</main>
+</div>
+
+</body>
+</html>
