@@ -250,7 +250,7 @@ def generate_packets():
             '  These are hardcoded and NOT auto-derived — update them for the next packet:',
             '  - Page 1 chart: add the new academic year + its seminar count in',
             '      generators/pdf1_seminar_counts.py (DEFAULT_YEARS and DEFAULT_COUNTS).',
-            '      This cycle: 26-27 = 117.',
+            '      This cycle: 26-27 = 116.',
             '  - Page 6 title year: generators/pdf6_enrollment.py ("2025–2026 Enrollment Report").',
             '  - Page 7 title year: generators/pdf7_evaluations.py ("2025–2026 Enrollment and',
             '      Evaluations") and its output filename in app.py.',
