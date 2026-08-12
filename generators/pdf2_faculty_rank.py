@@ -1,6 +1,7 @@
 """PDF 2: % of Seminars According to Faculty Rank - Stacked bar chart."""
 
 import os
+import re
 from reportlab.lib.pagesizes import letter, landscape
 from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
@@ -8,6 +9,8 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER
 from reportlab.graphics.shapes import Drawing, String, Line, Rect
 from reportlab.graphics.charts.barcharts import VerticalBarChart
+
+from .pdf4_rank_aggregator import aggregate_by_rank
 
 
 DEFAULT_FACULTY_RANK_DATA = {
@@ -20,6 +23,48 @@ DEFAULT_FACULTY_RANK_DATA = {
     'Emeritus (%)': [0.0, 2.8, 4.0, 2.6, 3.6, 3.9, 2.5, 1.0,
                      1.75, 1.0, 0.0, 1.0, 1.0],
 }
+
+
+# Which rank categories (as produced by aggregate_by_rank) roll up into each
+# bar. Ladder = tenure-track professors; Non-Ladder = lecturers, preceptors,
+# professors of the practice, and visiting appointments; Emeritus stands alone.
+_LADDER_CATEGORIES = ('Professor & University Professor',
+                      'Associate Professor', 'Assistant Professor')
+_NON_LADDER_CATEGORIES = ('SL/SP/PoP/PiR', 'Lecturer', 'Visiting (all levels)')
+_EMERITUS_CATEGORY = 'Emeritus & Emerita'
+_YEAR_PATTERN = re.compile(r'^\d{2,4}-\d{2,4}$')
+
+
+def compute_faculty_rank_data(all_rows):
+    """Compute Ladder/Non-Ladder/Emeritus percentages per year from SAVED rows.
+
+    Reuses PDF 4's weighted rank aggregation so the two pages always agree, then
+    rolls the seven rank categories up into the three bars and converts each
+    year to percentages of that year's total. Non-year columns (ID, etc.) and
+    years with no seminars are skipped. Returns None when there is nothing to
+    chart, so the caller can fall back to DEFAULT_FACULTY_RANK_DATA.
+    """
+    if not all_rows:
+        return None
+
+    rank_data, years = aggregate_by_rank(all_rows)
+    result = {'Year': [], 'Ladder (%)': [], 'Non-Ladder (%)': [], 'Emeritus (%)': []}
+
+    for year in years:
+        if not _YEAR_PATTERN.match(year):
+            continue
+        ladder = sum(rank_data[c][year] for c in _LADDER_CATEGORIES)
+        non_ladder = sum(rank_data[c][year] for c in _NON_LADDER_CATEGORIES)
+        emeritus = rank_data[_EMERITUS_CATEGORY][year]
+        total = ladder + non_ladder + emeritus
+        if total <= 0:
+            continue
+        result['Year'].append(year)
+        result['Ladder (%)'].append(round(ladder / total * 100, 1))
+        result['Non-Ladder (%)'].append(round(non_ladder / total * 100, 1))
+        result['Emeritus (%)'].append(round(emeritus / total * 100, 1))
+
+    return result if result['Year'] else None
 
 
 def create_faculty_rank_chart(rank_data=None):

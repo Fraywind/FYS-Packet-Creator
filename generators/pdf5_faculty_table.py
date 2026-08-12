@@ -195,19 +195,24 @@ def get_rank_sort_key(rank):
 def get_rank_abbreviation(rank):
     """Abbreviate 'Professor of the Practice' to 'P.O.P.' for compact table display.
 
-    All other ranks are returned unchanged.
+    Operates line by line so a multi-rank stack (e.g.
+    'Professor of the Practice\\nEmeritus') keeps its other ranks instead of
+    collapsing to a single 'P.O.P.'. All other lines are returned unchanged.
 
     Args:
-        rank: Display-ready rank string.
+        rank: Display-ready rank string, possibly newline-separated.
 
     Returns:
-        Abbreviated rank string if applicable, otherwise the original string.
+        The rank string with each 'Professor of the Practice' line abbreviated
+        to 'P.O.P.' and every other line left as-is.
     """
     if not isinstance(rank, str):
         return str(rank)
-    if 'professor of the practice' in rank.lower():
-        return 'P.O.P.'
-    return rank
+    abbreviated_lines = [
+        'P.O.P.' if 'professor of the practice' in line.lower() else line
+        for line in rank.split('\n')
+    ]
+    return '\n'.join(abbreviated_lines)
 
 
 # ---------------------------------------------------------------------------
@@ -246,6 +251,67 @@ def read_excel_data_by_department(file_path):
             data_by_dept.setdefault(dept, []).append(row_data)
 
     return headers, data_by_dept
+
+
+# ---------------------------------------------------------------------------
+# Marker interpretation (shared by the table cells, color coding, and legend)
+# ---------------------------------------------------------------------------
+
+# Display glyphs
+SYM_STAR = '★'          # red star: joint, teaching two seminars
+SYM_HALF = '◗'          # half circle: joint appointment / co-teaching
+SYM_DOUBLE = '✓✓'  # double check: multiple sections
+SYM_CHECK = '✓'         # single check: taught that year
+
+
+def marker_symbol(marker):
+    """Return the table glyph for a raw SAVED marker, or '' for a blank cell."""
+    value = str(marker or '').strip()
+    if not value:
+        return ''
+    if 'XXSTAR' in value.upper():
+        return SYM_STAR
+    if '*' in value:
+        return SYM_HALF
+    if value == 'XX':
+        return SYM_DOUBLE
+    return SYM_CHECK
+
+
+def marker_color_key(marker):
+    """Return the color bucket for a marker, matching the cell text color.
+
+    B (retired / no longer at Harvard) wins over the rank annotations.
+    """
+    value = str(marker or '').strip()
+    if 'B' in value:
+        return 'black'
+    if '!!' in value:
+        return 'pink'
+    if '!' in value:
+        return 'grey'
+    return 'crimson'
+
+
+def legend_key(marker):
+    """Which legend line a marker belongs to, or None if it has no line.
+
+    Mirrors marker_symbol() and marker_color_key() so the legend lists exactly
+    the rules that actually appear in the table. Grey/pink half circles are an
+    edge case with no dedicated legend entry (as before) and return None.
+    """
+    symbol = marker_symbol(marker)
+    if not symbol:
+        return None
+    color = marker_color_key(marker)
+    if symbol == SYM_STAR:
+        return 'star'
+    if symbol == SYM_DOUBLE:
+        return 'double'
+    if symbol == SYM_HALF:
+        return {'black': 'joint_black', 'crimson': 'joint'}.get(color)
+    return {'crimson': 'current', 'grey': 'entry',
+            'pink': 'higher', 'black': 'check_black'}[color]
 
 
 # ---------------------------------------------------------------------------
@@ -288,18 +354,21 @@ def create_pdf5(dept, output_path, headers, dept_data):
     story = []
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Title'],
-                                 fontSize=24, spaceAfter=10, alignment=1,
-                                 textColor=colors.black)
-    dept_style = ParagraphStyle('DeptStyle', parent=styles['Heading2'],
-                                fontSize=20, spaceAfter=20, alignment=1,
+    # Department name is the primary header: large and crimson, on top.
+    dept_style = ParagraphStyle('DeptStyle', parent=styles['Title'],
+                                fontSize=24, spaceAfter=10, alignment=1,
                                 textColor=colors.HexColor('#8B0000'))
+    # Report name is the secondary line: smaller and black, below.
+    subtitle_style = ParagraphStyle('SubtitleStyle', parent=styles['Heading2'],
+                                    fontSize=20, spaceAfter=20, alignment=1,
+                                    textColor=colors.black)
 
-    story.append(Paragraph("Faculty Teaching Seminars by Name", title_style))
     story.append(Paragraph(department_full_name, dept_style))
+    story.append(Paragraph("Faculty Teaching Seminars by Name", subtitle_style))
 
     # Identify year columns (everything except Professor, Rank, Department)
-    year_columns = [h for h in headers if h not in ['Professor', 'Rank', 'Department']]
+    year_columns = [h for h in headers
+                    if str(h).strip().lower() not in ('id', 'professor', 'rank', 'department')]
 
     # Sort faculty by rank hierarchy, then alphabetically within each rank
     def sort_key(row):
@@ -330,15 +399,7 @@ def create_pdf5(dept, output_path, headers, dept_data):
 
         # Year columns: convert data markers to display symbols
         for year in year_columns:
-            value = str(row.get(year, '') or '').strip()
-            if not value:
-                table_row.append('')
-            elif '*' in value:
-                table_row.append('\u25d7')          # Half circle (joint/co-teaching)
-            elif value == 'XX':
-                table_row.append('\u2713\u2713')    # Double checkmark
-            else:
-                table_row.append('\u2713')          # Checkmark (color set later)
+            table_row.append(marker_symbol(row.get(year, '')))
 
         table_data.append(table_row)
 
@@ -380,6 +441,12 @@ def create_pdf5(dept, output_path, headers, dept_data):
     # B suffix = black (Retired or No Longer at Harvard)
     # ! = grey (FYSP Entry Rank), !! = pink (FYSP Higher Rank)
     # Otherwise = crimson (current rank)
+    marker_colors = {
+        'black': colors.black,                    # B: retired / no longer at Harvard
+        'pink': colors.HexColor('#FF6B6B'),       # !!: FYSP higher rank
+        'grey': colors.grey,                      # !: FYSP entry rank
+        'crimson': colors.HexColor('#8B0000'),    # standard (incl. the red star)
+    }
     for row_idx in range(1, len(table_data)):
         for col_idx in range(2, len(table_data[row_idx])):
             cell = table_data[row_idx][col_idx]
@@ -388,21 +455,8 @@ def create_pdf5(dept, output_path, headers, dept_data):
             if not cell:
                 continue
 
-            # B suffix takes priority — render in black
-            if 'B' in original:
-                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
-                           colors.black)
-            elif '!!' in original:
-                # Higher rank marker -> pink
-                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
-                           colors.HexColor('#FF6B6B'))
-            elif '!' in original:
-                # Entry rank marker -> grey
-                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx), colors.grey)
-            else:
-                # Standard marker -> crimson
-                style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
-                           colors.HexColor('#8B0000'))
+            style.add('TEXTCOLOR', (col_idx, row_idx), (col_idx, row_idx),
+                      marker_colors[marker_color_key(original)])
 
     table.setStyle(style)
     story.append(table)
@@ -427,13 +481,30 @@ def create_pdf5(dept, output_path, headers, dept_data):
                                         fontSize=13, spaceAfter=5, leftIndent=20,
                                         textColor=colors.black)
 
-    story.append(Paragraph("Legend:", legend_title_style))
-    story.append(Paragraph("\u2713 = Current Rank Years Taught", legend_style_red))
-    story.append(Paragraph("\u2713 = FYSP Entry Rank", legend_style_grey))
-    story.append(Paragraph("\u2713 = FYSP Higher Rank", legend_style_pink))
-    story.append(Paragraph("\u2713\u2713 = Multiple Sections Taught (2.0 score)", legend_style_red))
-    story.append(Paragraph("\u25d7 = Joint Department or Co-teaching (0.5 score)", legend_style_red))
-    story.append(Paragraph("\u25d7 = Retired or No Longer at Harvard", legend_style_black))
-    story.append(Paragraph("\u2713 = Retired or No Longer at Harvard", legend_style_black))
+    # Only show the rules whose markers actually appear in this department's
+    # table, in a fixed canonical order.
+    legend_entries = [
+        ('current',     "\u2713 = Current Rank Years Taught", legend_style_red),
+        ('entry',       "\u2713 = FYSP Entry Rank", legend_style_grey),
+        ('higher',      "\u2713 = FYSP Higher Rank", legend_style_pink),
+        ('double',      "\u2713\u2713 = Multiple Sections Taught (2.0 score)", legend_style_red),
+        ('star',        "\u2605 = Joint, Teaching Two Seminars", legend_style_red),
+        ('joint',       "\u25d7 = Joint Department or Co-teaching (0.5 score)", legend_style_red),
+        ('joint_black', "\u25d7 = Retired or No Longer at Harvard", legend_style_black),
+        ('check_black', "\u2713 = Retired or No Longer at Harvard", legend_style_black),
+    ]
+
+    present_keys = set()
+    for row in sorted_data:
+        for year in year_columns:
+            key = legend_key(row.get(year, ''))
+            if key:
+                present_keys.add(key)
+
+    if present_keys:
+        story.append(Paragraph("Legend:", legend_title_style))
+        for key, text, sty in legend_entries:
+            if key in present_keys:
+                story.append(Paragraph(text, sty))
 
     doc.build(story)

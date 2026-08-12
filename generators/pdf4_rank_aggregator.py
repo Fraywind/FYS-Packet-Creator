@@ -102,7 +102,8 @@ def aggregate_by_rank(data):
     """Aggregate teaching data by rank categories."""
     rank_data = {rank: {} for rank in RANK_CATEGORIES}
 
-    year_columns = [k for k in data[0].keys() if k not in ['Department', 'Professor', 'Rank']]
+    year_columns = [k for k in data[0].keys()
+                    if str(k).strip().lower() not in ('id', 'department', 'professor', 'rank')]
 
     abbreviated_year_columns = []
     for year in year_columns:
@@ -149,7 +150,13 @@ def aggregate_by_rank(data):
                         continue
 
             # Normal aggregation
-            if value == 'X':
+            if str(value).strip().upper() == 'XXSTAR':
+                # Joint appointment teaching two seminars: score 1 for each
+                # department row it is joint of. A joint-of-two case adds 1 in
+                # each department (2 total program-wide), matching a non-joint
+                # two-seminar case ('XX', which scores 2 in its one department).
+                rank_data[rank_category][abbr_year] += 1
+            elif value == 'X':
                 rank_data[rank_category][abbr_year] += 1
             elif value == 'XX':
                 rank_data[rank_category][abbr_year] += 2
@@ -182,14 +189,16 @@ def create_pdf4(dept, output_path, saved_data):
     story = []
     styles = getSampleStyleSheet()
 
-    title_style = ParagraphStyle('CustomTitle', parent=styles['Heading1'],
-                                 fontSize=20, spaceAfter=10, alignment=1)
-    dept_style = ParagraphStyle('DeptSub', parent=styles['Heading2'],
-                                fontSize=16, spaceAfter=20, alignment=1,
+    # Department name on top: larger, crimson.
+    dept_style = ParagraphStyle('DeptTitle', parent=styles['Heading1'],
+                                fontSize=20, spaceAfter=10, alignment=1,
                                 textColor=colors.HexColor('#8B0000'))
+    # Report name below: smaller, black.
+    subtitle_style = ParagraphStyle('SubTitle', parent=styles['Heading2'],
+                                    fontSize=16, spaceAfter=20, alignment=1)
 
-    story.append(Paragraph("Seminars Taught per Year by Rank", title_style))
     story.append(Paragraph(department_full_name, dept_style))
+    story.append(Paragraph("Seminars Taught per Year by Rank", subtitle_style))
 
     # Build table
     table_data = [['Rank'] + year_columns]
