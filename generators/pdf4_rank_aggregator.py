@@ -8,7 +8,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-from .shared import ACRONYM_TO_FULL
+from .shared import ACRONYM_TO_FULL, trim_years_to_fit, dropped_years
 
 RANK_CATEGORIES = [
     "Professor & University Professor",
@@ -98,22 +98,29 @@ def format_number(value):
         return f"{value:.1f}"
 
 
+def year_columns_of(data):
+    """The academic-year columns of the master sheet, oldest first."""
+    return [k for k in data[0].keys()
+            if str(k).strip().lower() not in ('id', 'department', 'professor', 'rank')]
+
+
+def abbreviate_year(year):
+    """Year heading as this table prints it: '2013-14' becomes '13-14'.
+
+    A heading in any other shape is left exactly as it is.
+    """
+    if '-' not in year:
+        return year
+    start, _, end = year.partition('-')
+    return f"{start[-2:] if len(start) == 4 else start}-{end[-2:] if len(end) == 4 else end}"
+
+
 def aggregate_by_rank(data):
     """Aggregate teaching data by rank categories."""
     rank_data = {rank: {} for rank in RANK_CATEGORIES}
 
-    year_columns = [k for k in data[0].keys()
-                    if str(k).strip().lower() not in ('id', 'department', 'professor', 'rank')]
-
-    abbreviated_year_columns = []
-    for year in year_columns:
-        if '-' in year:
-            parts = year.split('-')
-            start = parts[0][-2:] if len(parts[0]) == 4 else parts[0]
-            end = parts[1][-2:] if len(parts[1]) == 4 else parts[1]
-            abbreviated_year_columns.append(f"{start}-{end}")
-        else:
-            abbreviated_year_columns.append(year)
+    year_columns = year_columns_of(data)
+    abbreviated_year_columns = [abbreviate_year(y) for y in year_columns]
 
     for rank in RANK_CATEGORIES:
         for year in abbreviated_year_columns:
@@ -170,14 +177,57 @@ def aggregate_by_rank(data):
     return rank_data, abbreviated_year_columns
 
 
+# Font sizes and padding decide how wide the table comes out. The width probe
+# in create_pdf4 measures with exactly these, so a measurement can never drift
+# from what is actually drawn.
+HEADER_FONT_SIZE = 10
+RANK_FONT_SIZE = 12
+VALUE_FONT_SIZE = 12
+RANK_PADDING = 12
+CELL_PADDING = 4
+
+
+def layout_style(row_count):
+    """The style commands that decide the column widths.
+
+    The probe and the real table both start from these, so what is measured is
+    what is drawn. The Total row is bold, and bold digits are wider, so its
+    font belongs here too.
+    """
+    total_idx = row_count - 1
+    return [
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), HEADER_FONT_SIZE),
+        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 1), (0, -1), RANK_FONT_SIZE),
+        ('LEFTPADDING', (0, 1), (0, -1), RANK_PADDING),
+        ('RIGHTPADDING', (0, 1), (0, -1), RANK_PADDING),
+        ('FONTNAME', (1, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (1, 1), (-1, -1), VALUE_FONT_SIZE),
+        ('LEFTPADDING', (1, 0), (-1, -1), CELL_PADDING),
+        ('RIGHTPADDING', (1, 0), (-1, -1), CELL_PADDING),
+        ('FONTNAME', (0, total_idx), (-1, total_idx), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, total_idx), (-1, total_idx), VALUE_FONT_SIZE),
+    ]
+
+
 def create_pdf4(dept, output_path, saved_data):
     """Create PDF 4 (Rank Aggregator) for a specific department.
 
     saved_data: list of row dicts for this department from SAVED.xlsx
+
+    Returns:
+        The oldest year columns left off because the table would not have fit
+        across the page, oldest first and named as the master spreadsheet names
+        them ("2013-14"). Empty for the departments that show every year, which
+        is nearly all of them.
     """
     department_full_name = ACRONYM_TO_FULL.get(dept, dept)
 
     rank_data, year_columns = aggregate_by_rank(saved_data)
+    # Headings are abbreviated for the table ('13-14') but reported to whoever
+    # runs this in the spreadsheet's own spelling ('2013-14').
+    full_year_names = dict(zip(year_columns, year_columns_of(saved_data)))
 
     year_totals = {}
     for year in year_columns:
@@ -201,46 +251,53 @@ def create_pdf4(dept, output_path, saved_data):
     story.append(Paragraph("Seminars Taught per Year by Rank", subtitle_style))
 
     # Build table
-    table_data = [['Rank'] + year_columns]
-    for rank in RANK_CATEGORIES:
-        row = [rank.replace('/', ' ')]
-        for year in year_columns:
-            row.append(format_number(rank_data[rank][year]))
-        table_data.append(row)
+    def build_table(years):
+        """The whole table, header row first, for a given set of year columns."""
+        rows = [['Rank'] + list(years)]
+        for rank in RANK_CATEGORIES:
+            rows.append([rank.replace('/', ' ')]
+                        + [format_number(rank_data[rank][y]) for y in years])
+        rows.append(['Total'] + [format_number(year_totals[y]) for y in years])
+        return rows
 
-    total_row = ['Total'] + [format_number(year_totals[y]) for y in year_columns]
-    table_data.append(total_row)
+    def fits_on_page(years):
+        """Does the table built from these years stay inside the paper?
 
+        An over-wide table is centred, so it only loses text once it reaches
+        the page edge, not merely the margin. Measured with ReportLab's own
+        layout rather than estimated, so this keeps working as years are added.
+        """
+        rows = build_table(years)
+        probe = Table(rows, repeatRows=1)
+        probe.setStyle(TableStyle(layout_style(len(rows))))
+        return probe.wrap(doc.width, doc.height)[0] <= doc.pagesize[0]
+
+    # Departments that fit keep every year. The ones that would be cut off at
+    # both edges start a year later instead.
+    all_years = year_columns
+    year_columns = trim_years_to_fit(all_years, fits_on_page)
+    left_off = [full_year_names.get(y, y)
+                for y in dropped_years(all_years, year_columns)]
+
+    table_data = build_table(year_columns)
     table = Table(table_data, repeatRows=1)
 
-    style = TableStyle([
+    style = TableStyle(layout_style(len(table_data)) + [
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B0000')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
         ('BACKGROUND', (0, 1), (0, -1), colors.HexColor('#f8f9fa')),
         ('ALIGN', (0, 1), (0, -1), 'LEFT'),
-        ('FONTNAME', (0, 1), (0, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 1), (0, -1), 12),
-        ('LEFTPADDING', (0, 1), (0, -1), 12),
-        ('RIGHTPADDING', (0, 1), (0, -1), 12),
         ('ALIGN', (1, 1), (-1, -1), 'CENTER'),
-        ('FONTSIZE', (1, 1), (-1, -1), 12),
-        ('FONTNAME', (1, 1), (-1, -1), 'Helvetica'),
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
         ('ROWBACKGROUNDS', (0, 1), (-1, -1), [colors.white, colors.HexColor('#f8f9fa')]),
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (1, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (1, 0), (-1, -1), 4),
     ])
 
     total_idx = len(table_data) - 1
     style.add('BACKGROUND', (0, total_idx), (-1, total_idx), colors.HexColor('#e6e6e6'))
-    style.add('FONTNAME', (0, total_idx), (-1, total_idx), 'Helvetica-Bold')
-    style.add('FONTSIZE', (0, total_idx), (-1, total_idx), 12)
 
     table.setStyle(style)
     story.append(table)
@@ -258,3 +315,4 @@ def create_pdf4(dept, output_path, saved_data):
         story.append(Paragraph(f"\u2022 {acronym} = {full_name}", legend_style))
 
     doc.build(story)
+    return left_off

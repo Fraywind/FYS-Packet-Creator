@@ -6,9 +6,9 @@
     'use strict';
 
     const SOURCES = [
-        { key: 'saved',     field: 'saved_xlsx',               friendly: 'Faculty Teaching History',  inputId: 'file-saved' },
-        { key: 'current',   field: 'application_current_xlsx', friendly: 'Current-Year Applications', inputId: 'file-current' },
-        { key: 'holygrail', field: 'holygrail_xlsx',           friendly: 'Prior-Year Evaluations',    inputId: 'file-holygrail' },
+        { key: 'saved',     field: 'saved_xlsx',            friendly: 'Faculty Teaching History', inputId: 'file-saved' },
+        { key: 'current',   field: 'current_seminars_xlsx', friendly: 'Current Seminars Offered', inputId: 'file-current' },
+        { key: 'holygrail', field: 'holygrail_xlsx',        friendly: 'Prior-Year Evaluations',   inputId: 'file-holygrail' },
     ];
 
     const state = {
@@ -296,6 +296,8 @@
             ${warns > 0 ? ` · <span class="stat-pill is-warn">${warns}</span> warning${warns > 1 ? 's' : ''}` : ''}
         `;
 
+        renderNotes(r);
+
         if (warns > 0) {
             const shelf = document.getElementById('errors-shelf');
             const list = document.getElementById('errors-list');
@@ -309,6 +311,24 @@
         }
 
         renderDepartments(currentSort());
+    }
+
+    /* The run always writes a notes file recording what was produced, what was
+       left out on purpose, and what changes next year. Show it here so nobody
+       has to know to go looking for it in the output folder. */
+    function renderNotes(r) {
+        const shelf = document.getElementById('notes-shelf');
+        if (!r.notes) { shelf.hidden = true; return; }
+
+        const attention = r.attention || [];
+        document.getElementById('notes-headline').textContent = attention.length
+            ? attention.join(' · ')
+            : 'Nothing needs a second look. The notes list what was produced and what changes next year.';
+        document.getElementById('notes-body').textContent = r.notes;
+        document.getElementById('notes-file').textContent = r.notes_filename || 'README.txt';
+        shelf.classList.toggle('has-attention', attention.length > 0);
+        shelf.hidden = false;
+        shelf.open = false;
     }
 
     function currentSort() {

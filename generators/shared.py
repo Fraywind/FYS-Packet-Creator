@@ -154,6 +154,47 @@ def fit_seminar_title(title, max_width, note='', font_name='Helvetica',
     return text, min_size, False, False
 
 
+# ---------------------------------------------------------------------------
+# Wide table fitting
+# ---------------------------------------------------------------------------
+# Pages 4 and 5 both put one column per academic year next to a column of text
+# (rank names on page 4, faculty names on page 5). Each new year makes them a
+# little wider, and a department with long faculty names already pushes page 5
+# past the paper. ReportLab centres an over-wide table, so it runs off both
+# edges at once: the first letter of every name and the last year column are
+# physically cut off.
+#
+# The fix is deliberately narrow. Only the left/right overflow is handled, and
+# only for the departments that actually overflow. Everyone else is untouched.
+
+
+def trim_years_to_fit(year_columns, fits):
+    """Drop the oldest year columns until the table fits across the page.
+
+    Every table keeps its year headings spelled out the same way. The few that
+    would be cut start a year later instead (2014-15 rather than 2013-14),
+    which is then the only difference between their table and everyone else's.
+
+    Args:
+        year_columns: All academic-year columns, oldest first.
+        fits: Callable taking a list of years and returning True if the table
+              built from them stays on the page.
+
+    Returns:
+        The years to show, oldest first. The full list when it already fits, so
+        a table that is not in trouble is never changed.
+    """
+    years = list(year_columns)
+    while len(years) > 1 and not fits(years):
+        years = years[1:]
+    return years
+
+
+def dropped_years(all_years, shown_years):
+    """The oldest years left off a table, oldest first. Empty when none were."""
+    return list(all_years[:len(all_years) - len(shown_years)])
+
+
 # Footnote markers for a single page. Same glyph in different colors, so two
 # footnotes on one page stay tellable apart at a glance.
 FOOTNOTE_MARKERS = [

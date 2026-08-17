@@ -14,13 +14,13 @@ Sources:
                                                joint appointments
 
 Run it once a year, when the application cycle and course registration have both
-closed, then upload the result as the APPLICATION_CURRENT file.
+closed, then upload the result as the CURRENT SEMINARS OFFERED file.
 
     python3 tools/build_pdf6_input.py \
         --enrollment ~/Downloads/FYSEMR_SeminarEnrollment_Table_2026-2027.xlsx \
         --master ~/Downloads/"FYSP Master Packet Data.xlsx" \
         --year 2026-27 \
-        --out ~/Downloads/"APPLICATION_CURRENT 2026-2027.xlsx"
+        --out ~/Downloads/"CURRENT SEMINARS OFFERED 2026-2027.xlsx"
 
 Anything it cannot resolve is listed at the end of the run rather than guessed.
 """

@@ -560,7 +560,7 @@ ul.bullets li::before {
         <li><a href="#produces"><span class="toc-num">II</span><span>What it produces</span></a></li>
         <li><a href="#workbooks"><span class="toc-num">III</span><span>The three workbooks</span></a></li>
         <li><a href="#saved" class="toc-sub">SAVED.xlsx</a></li>
-        <li><a href="#applications" class="toc-sub">APPLICATION_CURRENT.xlsx</a></li>
+        <li><a href="#applications" class="toc-sub">CURRENT SEMINARS OFFERED.xlsx</a></li>
         <li><a href="#holygrail" class="toc-sub">HOLYGRAIL.xlsx</a></li>
         <li><a href="#running"><span class="toc-num">IV</span><span>Running the tool</span></a></li>
         <li><a href="#pdfs"><span class="toc-num">V</span><span>The seven PDFs explained</span></a></li>
@@ -604,7 +604,7 @@ ul.bullets li::before {
         </p>
         <ul class="bullets">
             <li><strong>SAVED.xlsx</strong>. Faculty teaching history. Produces PDFs 1, 2, 4, 5.</li>
-            <li><strong>APPLICATION_CURRENT.xlsx</strong>. Current year applications and placements. Produces PDF 6.</li>
+            <li><strong>CURRENT SEMINARS OFFERED.xlsx</strong>. Current year applications and placements. Produces PDF 6.</li>
             <li><strong>HOLYGRAIL.xlsx</strong>. Prior year enrollment plus Q evaluation scores. Produces PDF 7. We recommend renaming this in the future to something more streamlined, such as <code>EVALUATIONS_PRIOR.xlsx</code>.</li>
         </ul>
 
@@ -636,7 +636,7 @@ ul.bullets li::before {
                 <tr><td>2</td><td>% of Seminars According to Faculty Rank</td><td>SAVED.xlsx</td></tr>
                 <tr><td>4</td><td>Seminars Taught per Year per Rank</td><td>SAVED.xlsx</td></tr>
                 <tr><td>5</td><td>Faculty Teaching Seminars by Name</td><td>SAVED.xlsx</td></tr>
-                <tr><td>6</td><td>Current Year Enrollment Report</td><td>APPLICATION_CURRENT.xlsx</td></tr>
+                <tr><td>6</td><td>Current Year Enrollment Report</td><td>CURRENT SEMINARS OFFERED.xlsx</td></tr>
                 <tr><td>7</td><td>Prior Year Enrollment and Evaluations</td><td>HOLYGRAIL.xlsx</td></tr>
                 <tr><td>ALL</td><td>Combined packet (1, 2, 4, 5, 6, 7)</td><td>All three</td></tr>
             </tbody>
@@ -676,7 +676,7 @@ ul.bullets li::before {
                     <td>Internal FYSP file, updated each year by office staff.</td>
                 </tr>
                 <tr>
-                    <td>APPLICATION_CURRENT.xlsx</td>
+                    <td>CURRENT SEMINARS OFFERED.xlsx</td>
                     <td>Current Year Applications</td>
                     <td>Pulled in part from the FYSP application portal, compiled by office staff each fall. Request HCIR for this data file.</td>
                 </tr>
@@ -751,16 +751,21 @@ ul.bullets li::before {
             </div>
         </article>
 
-        <!-- APPLICATION_CURRENT -->
+        <!-- CURRENT SEMINARS OFFERED -->
         <article id="applications" class="workbook">
             <header class="workbook-head">
-                <h3 class="workbook-name">Current Year Applications</h3>
-                <span class="workbook-filename">APPLICATION_CURRENT.xlsx</span>
+                <h3 class="workbook-name">Current Seminars Offered</h3>
+                <span class="workbook-filename">CURRENT SEMINARS OFFERED.xlsx</span>
             </header>
             <p class="workbook-produces">Produces <strong>PDF 6</strong>. Current Year Enrollment Report</p>
 
             <p>
                 A roster of every first-year seminar being offered this academic year, together with how many students applied and how many were ultimately placed. It is the basis for the popularity story the packet tells each department: how oversubscribed or undersubscribed their seminars were this year.
+            </p>
+
+            <h4 class="subsub">When it is ready</h4>
+            <p>
+                Usually once the course registration deadline has passed. Before that deadline the placement numbers are still moving, so a packet built early will not match the final enrollment.
             </p>
 
             <h4 class="subsub">Where it comes from</h4>
@@ -813,7 +818,7 @@ ul.bullets li::before {
             </p>
             <ul class="bullets">
                 <li><strong>Q report evaluation scores</strong> for each seminar. From the student-completed course evaluation system.</li>
-                <li><strong>Enrollment numbers</strong> from the prior year's <code>APPLICATION_CURRENT.xlsx</code>. This year's HOLYGRAIL is largely last year's APPLICATION_CURRENT with Q scores merged in.</li>
+                <li><strong>Enrollment numbers</strong> from the prior year's <code>CURRENT SEMINARS OFFERED.xlsx</code>. This year's HOLYGRAIL is largely last year's CURRENT SEMINARS OFFERED with Q scores merged in.</li>
             </ul>
             <p>
                 Historically Nina has compiled this. If you are taking over the role, ask for the previous year's file and the procedure used to fold Q scores in.
@@ -941,7 +946,7 @@ ul.bullets li::before {
                 <span class="pdf-card-num">6.</span>
                 <h4 class="pdf-card-title">Current Year Enrollment Report</h4>
                 <p>This year's seminars. Title, instructor, term, applications, students placed.</p>
-                <p class="pdf-card-src">From APPLICATION_CURRENT.xlsx</p>
+                <p class="pdf-card-src">From CURRENT SEMINARS OFFERED.xlsx</p>
             </article>
 
             <article class="pdf-card">
@@ -981,7 +986,7 @@ ul.bullets li::before {
 
         <h3 class="sub">A PDF says "No data available"</h3>
         <p>
-            The tool found a department in one workbook but no matching rows in the workbook for that PDF. Example: PDF 6 says "no data" for <code>[ANTH]</code>. That means SAVED.xlsx had Anthropology, but APPLICATION_CURRENT.xlsx had no Anthropology rows this year. This is expected if a department is not running a seminar this year.
+            The tool found a department in one workbook but no matching rows in the workbook for that PDF. Example: PDF 6 says "no data" for <code>[ANTH]</code>. That means SAVED.xlsx had Anthropology, but CURRENT SEMINARS OFFERED.xlsx had no Anthropology rows this year. This is expected if a department is not running a seminar this year.
         </p>
 
         <h3 class="sub">A warning appears about reading a workbook</h3>
@@ -1014,12 +1019,12 @@ ul.bullets li::before {
                 Add a new year column on the right. Fill in the X, XX, X*, X!, X!! notation for every faculty member who taught. Promote, retire, or remove faculty whose status changed. Add new hires. As noted in section III, this is the slowest step. Consider updating only the faculty teaching this year first, and revisit the rest later.
             </li>
             <li>
-                <strong>Produce APPLICATION_CURRENT.xlsx for the new year.</strong>
+                <strong>Produce CURRENT SEMINARS OFFERED.xlsx for the new year.</strong>
                 Export student applications and placements from the FYSP application portal once the lottery is finalized. Clean and merge into the canonical sheet shape (see section III).
             </li>
             <li>
                 <strong>Produce HOLYGRAIL.xlsx for the prior year.</strong>
-                Take last year's APPLICATION_CURRENT.xlsx, merge in the matching Q report scores for each seminar, and save as the new HOLYGRAIL.xlsx. This is the most time-consuming step. Consider renaming the file in the future to <code>EVALUATIONS_PRIOR.xlsx</code> or similar.
+                Take last year's CURRENT SEMINARS OFFERED.xlsx, merge in the matching Q report scores for each seminar, and save as the new HOLYGRAIL.xlsx. This is the most time-consuming step. Consider renaming the file in the future to <code>EVALUATIONS_PRIOR.xlsx</code> or similar.
             </li>
             <li>
                 <strong>Ask a developer to update hardcoded year titles, if needed.</strong>

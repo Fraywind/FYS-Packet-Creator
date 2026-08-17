@@ -1,8 +1,9 @@
 # FYS Packet Creator
 
-An internal Harvard First-Year Seminar Program tool that turns three office spreadsheets into a folder of polished PDF reports for every department.
+An internal Harvard First-Year Seminar Program tool. It turns three office spreadsheets into a
+folder of finished PDF reports for every department, one packet per department.
 
-This tool is meant for FYSP staff. The handbook (linked below) is written for people without a programming background.
+Built for FYSP staff. The handbook (linked below) assumes no programming background.
 
 ## Quick start
 
@@ -20,7 +21,7 @@ This tool is meant for FYSP staff. The handbook (linked below) is written for pe
 
 ### If the start scripts do not work
 
-You need Python 3.9 or newer installed. Then, from this folder:
+You need Python 3.9 or newer. Then, from this folder:
 
 ```
 pip install -r requirements.txt
@@ -29,38 +30,133 @@ python app.py
 
 Then open `http://localhost:5050`.
 
-## What it does
+## What you need before you start
 
-For each department (for example `[AAAS]`, `[HLS]`, `[SEAS]`) the tool generates:
+Three spreadsheets. Upload all three for a complete packet. Any file you leave out simply skips
+its own pages, and the rest of the packet is still produced.
+
+| File | Feeds | What it is | When it is ready |
+|------|-------|-----------|------------------|
+| **SAVED.xlsx** | Pages 1, 2, 3, 4, 5 | Master faculty teaching history, one column per academic year | Maintained year-round, updated once the new teaching roster is out |
+| **CURRENT SEMINARS OFFERED.xlsx** | Page 6 | The seminars running this year, with applications and placements | Usually once the course registration deadline has passed |
+| **HOLYGRAIL.xlsx** | Page 7 | Last year's enrollment with Q report scores merged in | After HCIR releases the Q reports |
+
+Notes on each:
+
+- **SAVED.xlsx** is now maintained as `FYSP Master Packet Data.xlsx`. Its yearly column is written
+  by a separate project, [FYS-New-Year-Matching](#related-projects). This tool only reads it.
+- **CURRENT SEMINARS OFFERED.xlsx** was called `APPLICATION_CURRENT.xlsx` until August 2026. The
+  old name still uploads fine. Build it with `tools/build_pdf6_input.py` from the registrar
+  enrollment export.
+- **HOLYGRAIL.xlsx** is largely last year's Current Seminars Offered file with Q scores merged in.
+  A clearer name for it in the future would be `EVALUATIONS_PRIOR.xlsx`.
+
+## What you get
+
+For each department (for example `[AAAS]`, `[HLS]`, `[SEAS]`):
 
 | PDF | Title | Source |
 |-----|-------|--------|
 | 1 | Number of First-Year Seminars by Academic Year | SAVED.xlsx |
 | 2 | Percentage of Seminars by Faculty Rank | SAVED.xlsx |
+| 3 | Seminars Taught per Year (3D graph) | SAVED.xlsx |
 | 4 | Seminars Taught per Year per Rank | SAVED.xlsx |
 | 5 | Faculty Teaching Seminars by Name | SAVED.xlsx |
-| 6 | Current Year Enrollment Report | APPLICATION_CURRENT.xlsx |
+| 6 | Current Year Enrollment Report | CURRENT SEMINARS OFFERED.xlsx |
 | 7 | Prior Year Enrollment and Evaluations | HOLYGRAIL.xlsx |
 | ALL | Combined packet with all of the above | All three files |
 
-PDF 3 (3D Map) is not produced by this tool. See the handbook for the recommended approach.
+Everything lands in `output/`, one folder per department, plus a notes file.
+
+## Read the notes before you send anything out
+
+Every run writes **`output/README.txt`**. The page shows it when the run finishes, and it travels
+inside the "Download all" ZIP. Read it. It records:
+
+- Which of the three source files were used, and which pages are missing because a file was not
+  uploaded.
+- Departments present in the data but intentionally left out of the packets.
+- Seminar titles too long to print on one line, and what to do about them.
+- Tables that had to start a year later to fit on the page (see the rule below).
+- Any errors during generation.
+- The year labels that are hardcoded and must be bumped by one next cycle.
+
+If nothing needs a second look, the page says so and the notes are still one click away.
+
+## Rules the tool follows
+
+These are the decisions the tool makes on its own, so you know what to expect and what it will
+never quietly do.
+
+**Every page fits on its paper.** Nothing is ever printed past the edge and nothing overlaps.
+
+- *Long seminar titles* (pages 6 and 7) shrink slightly to stay on one line. If a title would have
+  to shrink past the smallest readable size, a shortened form from `TITLE_OVERRIDES` in
+  `generators/shared.py` is used instead, cut at the title's own colon or dash. A title long enough
+  to need shortening but not listed there wraps onto a second line, and the run reports it so a
+  person can add a shortened form.
+- *Wide tables* (pages 4 and 5) drop their oldest year columns, one at a time, until the table fits
+  across the page. This only happens to the departments that would otherwise be cut, and only for
+  left and right overflow. A department with long faculty names pushes the table wider than the
+  paper, and an over-wide table is centered, so it is cut at both edges at once: the first letter of
+  every name and the newest year column. Starting a year later (2014-15 rather than 2013-14) keeps
+  the year headings spelled out the same as every other department. The run reports exactly which
+  departments and which years.
+
+**Nothing is invented.** A department with no rows in a given file simply has no page from that
+file. A missing Q score stays missing. The tool never fills a gap with a guess.
+
+**Uncertain cases are reported, not resolved.** Anything the tool cannot decide goes into
+`output/README.txt` for a person to handle.
+
+**Every run starts clean.** `output/` is emptied at the start of each run, so what is in there is
+always from the most recent run and never a mix of two.
+
+## What still needs a person
+
+- Verifying joint appointments and co-teaching in the master spreadsheet before a packet cycle.
+- Adding shortened forms for seminar titles the run flags.
+- Bumping the hardcoded year labels each cycle. `output/README.txt` lists them with the exact file
+  and the value they need.
+- Non-FAS packets (HBS, HDS, HGSE, HKS, HLS, HMS, HSPH) were a lower priority when this was built.
+  Check them with the office before relying on them.
+
+## Yearly cycle
+
+1. Update the master spreadsheet's new academic-year column (see
+   [FYS-New-Year-Matching](#related-projects)).
+2. Once course registration closes, build the Current Seminars Offered file with
+   `tools/build_pdf6_input.py`.
+3. Merge last year's Q report scores into last year's roster to produce the new HOLYGRAIL file.
+4. Bump the hardcoded year labels listed in `output/README.txt`.
+5. Run the tool, read `output/README.txt`, then send the packets out.
 
 ## Documentation
 
-For complete instructions, the spreadsheet formats, where the files come from, and a yearly maintenance checklist, read the staff guide:
+For the full instructions, spreadsheet formats, where each file comes from, and the maintenance
+checklist, read the staff guide:
 
 - While the app is running, click "Read the guide" in the top right of the page.
 - Or open `static/instructions.html` directly in any browser (no server needed).
 
 ## Spreadsheet quick reference
 
-For full details (notation, special cases, how to update each year), see the handbook.
+Full details, notation, and special cases are in the handbook.
 
-**SAVED.xlsx** &middot; Columns: `Professor`, `Rank`, `Department`, then one column per academic year (for example `2014-15`, `2015-16`). Each year cell uses one of: `X`, `XX`, `X*`, `X!`, `X!!`.
+**SAVED.xlsx**. Columns: `Professor`, `Rank`, `Department`, then one column per academic year (for
+example `2014-15`, `2015-16`). Each year cell uses one of `X`, `XX`, `X*`, `X!`, `X!!`, `XXSTAR`.
 
-**APPLICATION_CURRENT.xlsx** &middot; Columns: `Department`, `Sem#`, `Term`, `Title`, `Fname`, `LName`, `Total Appl Count`, `Placed`.
+**CURRENT SEMINARS OFFERED.xlsx**. Columns: `Department`, `Sem#`, `Term`, `Title`, `Fname`,
+`LName`, `Total Appl Count`, `Placed`.
 
-**HOLYGRAIL.xlsx** &middot; Columns: `DEPT`, `SEM#`, `TERM`, `TITLE`, `FIRST  NAME` (two spaces), `LAST NAME`, `APPL#`, `ENROLL`, `SEMQ`, `INST Q`. We recommend renaming this file in the future to something clearer such as `EVALUATIONS_PRIOR.xlsx`.
+**HOLYGRAIL.xlsx**. Columns: `DEPT`, `SEM#`, `TERM`, `TITLE`, `FIRST  NAME` (two spaces),
+`LAST NAME`, `APPL#`, `ENROLL`, `SEMQ`, `INST Q`.
+
+## Related projects
+
+**FYS-New-Year-Matching** is a separate, standalone project that writes the new academic-year
+column into the master spreadsheet from the my.harvard teaching roster. It has its own rules for
+markers, aliases, and names that must never be auto-matched. This repo only consumes the result.
 
 ## Stopping the server
 

@@ -31,9 +31,32 @@ app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
 UPLOAD_DIR = os.path.join(os.path.dirname(__file__), 'uploads')
 OUTPUT_DIR = os.path.join(os.path.dirname(__file__), 'output')
 
+# The notes file written next to the packets. Whoever runs this is pointed at it
+# on screen when the run finishes; it is the record of what was produced, what
+# was left out on purpose, and what has to change next year.
+NOTES_FILENAME = 'README.txt'
+
+# The three source workbooks, in the order they appear on the page. Each entry:
+# the upload field, the file name staff know it by, the pages it feeds, and what
+# it is. Used both for saving uploads and for the "source files" section of the
+# notes, so the two can never disagree about what is required.
+SOURCES = [
+    ('saved_xlsx', 'SAVED.xlsx', 'pages 1, 2, 3, 4, 5',
+     'master faculty teaching history'),
+    ('current_seminars_xlsx', 'CURRENT SEMINARS OFFERED.xlsx', 'page 6',
+     'seminars running this year, with applications and placements'),
+    ('holygrail_xlsx', 'HOLYGRAIL.xlsx', 'page 7',
+     "last year's enrollment with Q report scores"),
+]
+
+# The current-seminars workbook was called APPLICATION_CURRENT until August
+# 2026. Accept the old upload field and the old saved file name so a cached copy
+# of the page, or an uploads folder from before the rename, still works.
+LEGACY_FIELDS = {'application_current_xlsx': 'current_seminars_xlsx'}
+
 # Departments that exist in the source data for documentation/accounting but
-# should NOT get a packet produced. Recorded in output.txt so it is clear the
-# omission is intentional, not a failure.
+# should NOT get a packet produced. Recorded in the notes file so it is clear
+# the omission is intentional, not a failure.
 EXCLUDED_DEPTS = {'Committee on Degrees in Social Studies'}
 
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -50,15 +73,28 @@ def upload_files():
     """Handle file uploads and store them."""
     uploaded = {}
 
-    for key in ['saved_xlsx', 'application_current_xlsx', 'holygrail_xlsx']:
-        if key in request.files:
-            f = request.files[key]
+    fields = {field: field for field, _, _, _ in SOURCES}
+    fields.update(LEGACY_FIELDS)
+
+    for field, key in fields.items():
+        if field in request.files:
+            f = request.files[field]
             if f.filename:
                 path = os.path.join(UPLOAD_DIR, key + '.xlsx')
                 f.save(path)
                 uploaded[key] = f.filename
 
     return jsonify({'status': 'ok', 'uploaded': uploaded})
+
+
+def uploaded_path(key):
+    """Where an uploaded workbook landed, or None if it was never uploaded."""
+    candidates = [key] + [old for old, new in LEGACY_FIELDS.items() if new == key]
+    for name in candidates:
+        path = os.path.join(UPLOAD_DIR, name + '.xlsx')
+        if os.path.exists(path):
+            return path
+    return None
 
 
 @app.route('/generate', methods=['POST'])
@@ -69,9 +105,9 @@ def generate_packets():
         shutil.rmtree(OUTPUT_DIR)
     os.makedirs(OUTPUT_DIR)
 
-    saved_path = os.path.join(UPLOAD_DIR, 'saved_xlsx.xlsx')
-    current_path = os.path.join(UPLOAD_DIR, 'application_current_xlsx.xlsx')
-    holygrail_path = os.path.join(UPLOAD_DIR, 'holygrail_xlsx.xlsx')
+    saved_path = uploaded_path('saved_xlsx')
+    current_path = uploaded_path('current_seminars_xlsx')
+    holygrail_path = uploaded_path('holygrail_xlsx')
 
     results = {'departments': [], 'errors': [], 'pdfs_generated': 0}
     all_depts = set()
@@ -80,7 +116,7 @@ def generate_packets():
     saved_headers = None
     saved_data_by_dept = None
     faculty_rank_data = None
-    if os.path.exists(saved_path):
+    if saved_path:
         try:
             saved_headers, saved_data_by_dept = read_excel_data_by_department(saved_path)
             all_depts.update(saved_data_by_dept.keys())
@@ -92,15 +128,15 @@ def generate_packets():
             results['errors'].append(f"Error reading SAVED.xlsx: {str(e)}")
 
     enrollment_df = None
-    if os.path.exists(current_path):
+    if current_path:
         try:
             enrollment_df = load_enrollment_data(current_path)
             all_depts.update(get_pdf6_depts(enrollment_df))
         except Exception as e:
-            results['errors'].append(f"Error reading APPLICATION_CURRENT.xlsx: {str(e)}")
+            results['errors'].append(f"Error reading CURRENT SEMINARS OFFERED.xlsx: {str(e)}")
 
     holygrail_df = None
-    if os.path.exists(holygrail_path):
+    if holygrail_path:
         try:
             holygrail_df = load_holygrail_data(holygrail_path)
             all_depts.update(get_pdf7_depts(holygrail_df))
@@ -114,7 +150,9 @@ def generate_packets():
     # Generate PDFs for each department
     excluded_present = []
     oversized_titles = set()
-    trimmed_page5_years = {}
+    # (page number, department) -> the oldest year columns that page left off so
+    # its table would fit across the paper. Pages 4 and 5 both do this.
+    trimmed_years = {}
     for dept in sorted(all_depts):
         if not dept or dept == 'nan':
             continue
@@ -161,7 +199,9 @@ def generate_packets():
         if saved_data_by_dept and dept in saved_data_by_dept:
             try:
                 pdf4_path = os.path.join(dept_folder, f"4. [{sanitized}] Seminars Taught per Year per Rank.pdf")
-                create_pdf4(dept, pdf4_path, saved_data_by_dept[dept])
+                dropped = create_pdf4(dept, pdf4_path, saved_data_by_dept[dept])
+                if dropped:
+                    trimmed_years[(4, dept)] = dropped
                 dept_pdfs.append('PDF 4')
                 results['pdfs_generated'] += 1
             except Exception as e:
@@ -173,13 +213,13 @@ def generate_packets():
                 pdf5_path = os.path.join(dept_folder, f"5. [{sanitized}] Faculty Teaching Seminars by Name.pdf")
                 dropped = create_pdf5(dept, pdf5_path, saved_headers, saved_data_by_dept[dept])
                 if dropped:
-                    trimmed_page5_years[dept] = dropped
+                    trimmed_years[(5, dept)] = dropped
                 dept_pdfs.append('PDF 5')
                 results['pdfs_generated'] += 1
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 5: {str(e)}")
 
-        # PDF 6 (Enrollment - from APPLICATION_CURRENT.xlsx)
+        # PDF 6 (Enrollment - from CURRENT SEMINARS OFFERED.xlsx)
         if enrollment_df is not None:
             try:
                 pdf6_path = os.path.join(dept_folder, f"6. [{sanitized}] 2026\u20132027 Enrollment Report.pdf")
@@ -216,15 +256,36 @@ def generate_packets():
             })
 
     # Write a plain-text note so anyone browsing output/ understands what was
-    # produced and, importantly, what was intentionally left out.
+    # produced and, importantly, what was intentionally left out. The same text
+    # goes back to the browser, so the run cannot finish without it being shown.
+    notes = ''
+    provided = {'saved_xlsx': saved_path,
+                'current_seminars_xlsx': current_path,
+                'holygrail_xlsx': holygrail_path}
+    missing = [f'{filename} ({pages})' for field, filename, pages, _ in SOURCES
+               if not provided.get(field)]
     try:
         produced = [d['name'] for d in results['departments']]
         lines = [
-            'FYS Packet Creator — generation notes',
+            'FYS PACKET CREATOR. READ THIS BEFORE SENDING THE PACKETS OUT.',
             f'Generated: {datetime.datetime.now():%Y-%m-%d %H:%M}',
             '',
             f'Departments with packets produced: {len(produced)}',
+            f'PDFs produced: {results["pdfs_generated"]}',
+            '',
+            'SOURCE FILES',
+            '  All three are needed for a complete packet. Any file left out just',
+            '  skips its own pages; the rest of the packet is still produced.',
+            '',
         ]
+        for field, filename, pages, purpose in SOURCES:
+            state = 'used' if provided.get(field) else 'NOT UPLOADED'
+            lines += [f'  {filename}',
+                      f'      {purpose}',
+                      f'      feeds {pages} ({state})']
+        if missing:
+            lines += ['', '  Missing, so those pages are not in this packet:']
+            lines += [f'    - {m}' for m in missing]
         if excluded_present:
             lines += [
                 '',
@@ -241,17 +302,18 @@ def generate_packets():
                 '(cut at the title\'s own colon or dash, do not paraphrase):',
             ]
             lines += [f'  - {t}' for t in sorted(oversized_titles)]
-        if trimmed_page5_years:
+        if trimmed_years:
             lines += [
                 '',
-                'Page 5 tables that start later than the others. These departments have',
+                'Tables that start a year later than the others. These departments have',
                 'long faculty names, so the full table comes out wider than the paper and',
-                'would be cut at both edges. The earliest year columns were left off so',
-                'the year headings stay spelled out in full, the same as every other',
-                'department. Years left off:',
+                'would be cut off at BOTH edges (the first letter of every name and the',
+                'newest year column). The oldest year columns were left off instead, so',
+                'the year headings stay spelled out the same as every other department.',
+                'Nothing else about these pages differs. Years left off:',
             ]
-            lines += [f'  - {d}: {", ".join(str(y) for y in years)}'
-                      for d, years in sorted(trimmed_page5_years.items())]
+            lines += [f'  - Page {page}, {d}: {", ".join(str(y) for y in years)}'
+                      for (page, d), years in sorted(trimmed_years.items())]
         if results['errors']:
             lines += ['', 'Errors during generation:']
             lines += [f'  - {e}' for e in results['errors']]
@@ -287,12 +349,41 @@ def generate_packets():
             '      Computed from the master spreadsheet; it picks up the newest year',
             '      column on its own.',
         ]
-        with open(os.path.join(OUTPUT_DIR, 'output.txt'), 'w') as fh:
-            fh.write('\n'.join(lines) + '\n')
+        notes = '\n'.join(lines) + '\n'
+        with open(os.path.join(OUTPUT_DIR, NOTES_FILENAME), 'w') as fh:
+            fh.write(notes)
     except Exception as e:
-        results['errors'].append(f'output.txt: {str(e)}')
+        results['errors'].append(f'{NOTES_FILENAME}: {str(e)}')
 
+    # A short list of what a person actually has to look at, so the page can say
+    # why the notes are worth opening instead of just insisting that they are.
+    attention = []
+    if missing:
+        attention.append(f'{len(missing)} source file{"s" if len(missing) > 1 else ""} '
+                         f'not uploaded, so some pages are missing')
+    if trimmed_years:
+        attention.append(f'{len(trimmed_years)} table{"s" if len(trimmed_years) > 1 else ""} '
+                         f'start a year later to fit the page')
+    if oversized_titles:
+        attention.append(f'{len(oversized_titles)} seminar title'
+                         f'{"s" if len(oversized_titles) > 1 else ""} wrapped onto a second line')
+    if excluded_present:
+        attention.append(f'{len(set(excluded_present))} department'
+                         f'{"s" if len(set(excluded_present)) > 1 else ""} left out on purpose')
+
+    results['notes'] = notes
+    results['notes_filename'] = NOTES_FILENAME
+    results['attention'] = attention
     return jsonify({'status': 'ok', 'results': results})
+
+
+@app.route('/notes')
+def generation_notes():
+    """The notes file for the last run, as plain text."""
+    path = os.path.join(OUTPUT_DIR, NOTES_FILENAME)
+    if not os.path.exists(path):
+        return 'No packets have been generated yet.', 404, {'Content-Type': 'text/plain'}
+    return send_file(path, mimetype='text/plain')
 
 
 @app.route('/departments')
@@ -356,6 +447,11 @@ def download_all():
                     full_path = os.path.join(root, f)
                     arcname = os.path.relpath(full_path, OUTPUT_DIR)
                     zf.write(full_path, arcname)
+        # The notes travel with the packets, so whoever opens the zip later
+        # still has the record of what was left out and why.
+        notes_path = os.path.join(OUTPUT_DIR, NOTES_FILENAME)
+        if os.path.exists(notes_path):
+            zf.write(notes_path, NOTES_FILENAME)
 
     buf.seek(0)
     return send_file(buf, mimetype='application/zip',

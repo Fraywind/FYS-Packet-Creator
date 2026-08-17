@@ -558,7 +558,7 @@ ul.bullets li::before {
         <li><a href="#produces"><span class="toc-num">2</span><span>What you get out of it</span></a></li>
         <li><a href="#workbooks"><span class="toc-num">3</span><span>The three input files</span></a></li>
         <li><a href="#saved" class="toc-sub">Faculty Teaching History</a></li>
-        <li><a href="#applications" class="toc-sub">Recent Applications Count</a></li>
+        <li><a href="#applications" class="toc-sub">Current Seminars Offered</a></li>
         <li><a href="#holygrail" class="toc-sub">Past Q Reports</a></li>
         <li><a href="#running"><span class="toc-num">4</span><span>Running the tool</span></a></li>
         <li><a href="#pdfs"><span class="toc-num">5</span><span>The seven PDFs explained</span></a></li>
@@ -593,7 +593,7 @@ ul.bullets li::before {
         <p>The three files, named here by what they actually are rather than by their internal filenames:</p>
         <ul class="bullets">
             <li><strong>Faculty Teaching History</strong> (<code>SAVED.xlsx</code>). Who taught what, year by year. Produces PDFs 1, 2, 4, 5.</li>
-            <li><strong>Recent Applications Count</strong> (<code>APPLICATION_CURRENT.xlsx</code>). This year&rsquo;s seminars and how popular they were. Produces PDF 6.</li>
+            <li><strong>Current Seminars Offered</strong> (<code>CURRENT SEMINARS OFFERED.xlsx</code>). This year&rsquo;s seminars and how popular they were. Produces PDF 6.</li>
             <li><strong>Past Q Reports</strong> (<code>HOLYGRAIL.xlsx</code>). Last year&rsquo;s enrollment and student evaluations. Produces PDF 7.</li>
         </ul>
 
@@ -623,7 +623,7 @@ ul.bullets li::before {
                 <tr><td>2</td><td>% of Seminars According to Faculty Rank</td><td>Faculty Teaching History</td></tr>
                 <tr><td>4</td><td>Seminars Taught per Year per Rank</td><td>Faculty Teaching History</td></tr>
                 <tr><td>5</td><td>Faculty Teaching Seminars by Name</td><td>Faculty Teaching History</td></tr>
-                <tr><td>6</td><td>Current Year Enrollment Report</td><td>Recent Applications Count</td></tr>
+                <tr><td>6</td><td>Current Year Enrollment Report</td><td>Current Seminars Offered</td></tr>
                 <tr><td>7</td><td>Prior Year Enrollment and Evaluations</td><td>Past Q Reports</td></tr>
                 <tr><td>ALL</td><td>Combined packet (1, 2, 4, 5, 6, 7)</td><td>All three</td></tr>
             </tbody>
@@ -661,8 +661,8 @@ ul.bullets li::before {
                     <td>Internal FYSP file, updated each year by office staff.</td>
                 </tr>
                 <tr>
-                    <td>APPLICATION_CURRENT.xlsx</td>
-                    <td>Recent Applications Count</td>
+                    <td>CURRENT SEMINARS OFFERED.xlsx</td>
+                    <td>Current Seminars Offered</td>
                     <td>Pulled from the FYSP application portal, compiled by office staff each fall. <strong>Request HCIR for this data file.</strong></td>
                 </tr>
                 <tr>
@@ -736,16 +736,21 @@ ul.bullets li::before {
             </div>
         </article>
 
-        <!-- APPLICATION_CURRENT -->
+        <!-- CURRENT SEMINARS OFFERED -->
         <article id="applications" class="workbook">
             <header class="workbook-head">
-                <h3 class="workbook-name">Recent Applications Count</h3>
-                <span class="workbook-filename">APPLICATION_CURRENT.xlsx</span>
+                <h3 class="workbook-name">Current Seminars Offered</h3>
+                <span class="workbook-filename">CURRENT SEMINARS OFFERED.xlsx</span>
             </header>
             <p class="workbook-produces">Produces <strong>PDF 6</strong>. Current Year Enrollment Report</p>
 
             <p>
                 A roster of every first-year seminar offered this academic year, with how many students applied and how many were placed. The basis for the popularity story the packet tells each department: which seminars were oversubscribed, which were not.
+            </p>
+
+            <h4 class="subsub">When it is ready</h4>
+            <p>
+                Usually once the course registration deadline has passed. Before that deadline the placement numbers are still moving, so a packet built early will not match the final enrollment.
             </p>
 
             <h4 class="subsub">Where it comes from</h4>
@@ -798,7 +803,7 @@ ul.bullets li::before {
             </p>
             <ul class="bullets">
                 <li><strong>Q report evaluation scores</strong> for each seminar, from the student course evaluation system.</li>
-                <li><strong>Enrollment numbers</strong> from the prior year&rsquo;s Recent Applications Count file. In effect, this year&rsquo;s Past Q Reports is largely last year&rsquo;s Recent Applications Count with Q scores merged in.</li>
+                <li><strong>Enrollment numbers</strong> from the prior year&rsquo;s Current Seminars Offered file. In effect, this year&rsquo;s Past Q Reports is largely last year&rsquo;s Current Seminars Offered with Q scores merged in.</li>
             </ul>
             <p><strong>Request HCIR for this data file.</strong></p>
 
@@ -920,7 +925,7 @@ ul.bullets li::before {
                 <span class="pdf-card-num">6.</span>
                 <h4 class="pdf-card-title">Current Year Enrollment Report</h4>
                 <p>This year&rsquo;s seminars: title, instructor, term, applications, students placed.</p>
-                <p class="pdf-card-src">From Recent Applications Count</p>
+                <p class="pdf-card-src">From Current Seminars Offered</p>
             </article>
 
             <article class="pdf-card">
@@ -958,7 +963,7 @@ ul.bullets li::before {
 
         <h3 class="sub">A PDF says &ldquo;No data available&rdquo;</h3>
         <p>
-            The tool found a department in one file but no matching rows in the file for that PDF. For example, PDF 6 says &ldquo;no data&rdquo; for <code>[ANTH]</code>. That means Faculty Teaching History had Anthropology, but Recent Applications Count had no Anthropology rows this year. This is expected when a department is not running a seminar this year.
+            The tool found a department in one file but no matching rows in the file for that PDF. For example, PDF 6 says &ldquo;no data&rdquo; for <code>[ANTH]</code>. That means Faculty Teaching History had Anthropology, but Current Seminars Offered had no Anthropology rows this year. This is expected when a department is not running a seminar this year.
         </p>
 
         <h3 class="sub">A warning appears about reading a file</h3>
@@ -989,12 +994,12 @@ ul.bullets li::before {
                 Add a new year column on the right. Fill in the <code>X</code>, <code>XX</code>, <code>X*</code>, <code>X!</code>, <code>X!!</code> notation for every faculty member who taught. Promote, retire, or remove faculty whose status changed, and add any new hires. This is the slowest step, so consider updating only the faculty teaching this year first and revisiting the rest later. You can also ask HCIR for a list of faculty whose rank changed, which saves you from checking each person by hand.
             </li>
             <li>
-                <strong>Get Recent Applications Count for the new year.</strong>
+                <strong>Get Current Seminars Offered for the new year.</strong>
                 Once the lottery is finalized, request the data file from HCIR. Clean and merge it into the same column shape described in section 3.
             </li>
             <li>
                 <strong>Get Past Q Reports for the prior year.</strong>
-                Take last year&rsquo;s Recent Applications Count file, merge in the Q report scores for each seminar (request these from HCIR), and save as the new Past Q Reports file. This is the most time-consuming step.
+                Take last year&rsquo;s Current Seminars Offered file, merge in the Q report scores for each seminar (request these from HCIR), and save as the new Past Q Reports file. This is the most time-consuming step.
             </li>
             <li>
                 <strong>Ask whoever maintains the tool to update the year titles, if needed.</strong>

@@ -685,6 +685,101 @@ body {
 }
 .stat-pill.is-warn { color: var(--warn); }
 
+/* ─── Notes shelf ─── */
+/* Sits above the department index because the notes are the one thing to read
+   before the packets go out. Collapsed by default: the summary line says what
+   needs a second look, the full text is one click away. */
+.notes-shelf {
+    margin-bottom: 1.75rem;
+    border-left: 3px solid var(--rule-soft);
+    background: var(--paper-soft);
+}
+.notes-shelf.has-attention {
+    border-left-color: var(--crimson);
+    background: var(--crimson-fade);
+}
+.notes-summary {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 0.2rem 1.5rem;
+    align-items: center;
+    padding: 1rem 1.4rem;
+    cursor: pointer;
+    list-style: none;
+}
+.notes-summary::-webkit-details-marker { display: none; }
+.notes-summary:focus-visible {
+    outline: 2px solid var(--crimson);
+    outline-offset: -2px;
+}
+.notes-eyebrow {
+    grid-column: 1;
+    font-family: var(--mono);
+    font-size: 0.68rem;
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.notes-headline {
+    grid-column: 1;
+    font-family: var(--display);
+    font-size: 1.05rem;
+    line-height: 1.35;
+    color: var(--ink);
+    text-wrap: balance;
+}
+.notes-shelf.has-attention .notes-headline { color: var(--crimson-deep); }
+.notes-cue {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--muted);
+    white-space: nowrap;
+    border-bottom: 1px solid var(--rule-soft);
+    padding-bottom: 0.15rem;
+    transition: color 0.15s, border-color 0.15s;
+}
+.notes-summary:hover .notes-cue {
+    color: var(--crimson);
+    border-bottom-color: var(--crimson);
+}
+.notes-shelf[open] .notes-cue::after { content: " ×"; }
+.notes-body {
+    margin: 0 1.4rem;
+    padding: 1.1rem 0;
+    border-top: 1px solid var(--rule-soft);
+    /* The notes run long, so this scrolls. The bottom rule marks where the
+       scrolling region ends, otherwise a cut-off line reads as truncated. */
+    border-bottom: 1px solid var(--rule-soft);
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    line-height: 1.65;
+    color: var(--ink-soft);
+    white-space: pre-wrap;
+    overflow-x: auto;
+    max-height: 26rem;
+    overflow-y: auto;
+}
+.notes-foot {
+    padding: 0.9rem 1.4rem 1.1rem;
+    font-size: 0.9rem;
+    color: var(--muted);
+}
+.notes-foot code {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--ink-soft);
+}
+.notes-foot a { color: var(--crimson); }
+
+@media (max-width: 640px) {
+    .notes-summary { grid-template-columns: 1fr; }
+    .notes-cue { grid-column: 1; grid-row: auto; justify-self: start; }
+}
+
 /* ─── Errors shelf ─── */
 .errors-shelf {
     margin-top: 2rem;

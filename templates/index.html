@@ -72,14 +72,14 @@
                 </div>
             </article>
 
-            <article class="dropzone" data-key="current" data-field="application_current_xlsx">
+            <article class="dropzone" data-key="current" data-field="current_seminars_xlsx">
                 <header class="dz-head">
                     <span class="dz-tag">Pdf · 6</span>
-                    <span class="dz-filename">APPLICATION_CURRENT.xlsx</span>
+                    <span class="dz-filename">CURRENT SEMINARS OFFERED.xlsx</span>
                 </header>
-                <h3 class="dz-name">Current-Year Applications</h3>
-                <p class="dz-blurb">How many students applied to each seminar this season and how many were placed.</p>
-                <div class="dz-drop" tabindex="0" role="button" aria-label="Upload APPLICATION_CURRENT.xlsx">
+                <h3 class="dz-name">Current Seminars Offered</h3>
+                <p class="dz-blurb">The seminars running this year, with how many students applied to each and how many were placed. Usually ready once the course registration deadline has passed.</p>
+                <div class="dz-drop" tabindex="0" role="button" aria-label="Upload CURRENT SEMINARS OFFERED.xlsx">
                     <input type="file" id="file-current" accept=".xlsx,.xls" hidden />
                     <div class="dz-empty">
                         <svg class="dz-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.2"><path d="M12 3v13m0 0l-4-4m4 4l4-4M5 21h14"/></svg>
@@ -162,6 +162,19 @@
                 <p class="movement-sub" id="results-sub">—</p>
             </div>
         </header>
+
+        <details class="notes-shelf" id="notes-shelf" hidden>
+            <summary class="notes-summary">
+                <span class="notes-eyebrow">Before you send these out</span>
+                <span class="notes-headline" id="notes-headline">Read the generation notes</span>
+                <span class="notes-cue">Read the notes</span>
+            </summary>
+            <pre class="notes-body" id="notes-body"></pre>
+            <p class="notes-foot">
+                Saved as <code id="notes-file">README.txt</code> beside the packets and included in the ZIP.
+                <a href="/notes" target="_blank" rel="noopener">Open in a new tab</a>
+            </p>
+        </details>
 
         <div class="index-toolbar">
             <div class="search">

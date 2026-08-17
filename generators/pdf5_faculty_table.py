@@ -42,7 +42,7 @@ from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
 from reportlab.lib import colors
 from reportlab.lib.units import inch
 
-from .shared import ACRONYM_TO_FULL
+from .shared import ACRONYM_TO_FULL, trim_years_to_fit, dropped_years
 
 
 # ---------------------------------------------------------------------------
@@ -327,32 +327,6 @@ MARK_FONT_SIZE = 12
 CELL_PADDING = 4
 
 
-def trim_years_to_fit(year_columns, fits):
-    """Drop the oldest year columns until the table fits on the page.
-
-    A department with long faculty names pushes the table wider than the page.
-    ReportLab centres an over-wide table, so it runs off both edges at once and
-    the first letter of every name and the last year column are physically cut
-    off.
-
-    Every department keeps its year headings spelled out in full ("2013-14",
-    "2014-15", ...). The few that would be cut start a year later instead, which
-    is the only difference between their table and everyone else's.
-
-    Args:
-        year_columns: All academic-year columns, oldest first.
-        fits: Callable taking a list of years and returning True if the table
-              built from them stays on the page.
-
-    Returns:
-        The years to show, oldest first. The full list when it already fits.
-    """
-    years = list(year_columns)
-    while len(years) > 1 and not fits(years):
-        years = years[1:]
-    return years
-
-
 def create_pdf5(dept, output_path, headers, dept_data):
     """Create PDF 5 (Faculty Teaching Table) for a specific department.
 
@@ -475,7 +449,7 @@ def create_pdf5(dept, output_path, headers, dept_data):
     # so the cell colouring and the legend follow the table.
     all_years = year_columns
     year_columns = trim_years_to_fit(all_years, fits_on_page)
-    dropped_years = all_years[:len(all_years) - len(year_columns)]
+    left_off = dropped_years(all_years, year_columns)
 
     table_data = build_table(year_columns)
     table = Table(table_data, repeatRows=1)
@@ -575,4 +549,4 @@ def create_pdf5(dept, output_path, headers, dept_data):
                 story.append(Paragraph(text, sty))
 
     doc.build(story)
-    return dropped_years
+    return left_off
