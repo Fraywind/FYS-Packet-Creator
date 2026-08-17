@@ -1,6 +1,7 @@
 """Shared constants and utilities for all PDF generators."""
 
 import math
+import re
 
 DEPARTMENT_MAPPING = {
     'Harvard Business School': 'HBS',
@@ -117,25 +118,67 @@ TITLE_OVERRIDES = {
 }
 
 
-def fit_seminar_title(title, max_width, font_name='Helvetica',
+def fit_seminar_title(title, max_width, note='', font_name='Helvetica',
                       base_size=TITLE_FONT_SIZE, min_size=TITLE_FONT_FLOOR):
     """Fit a seminar title into a column of max_width points.
 
-    Returns (text, font_size, fits_on_one_line). A False third value means even
-    the shortened form needs to wrap, and the title should be added to
-    TITLE_OVERRIDES.
+    note is an optional parenthetical such as a co-teaching credit. It is kept
+    on the title when there is room for it at a readable size, and dropped when
+    there is not, so the caller can move it to a footnote instead.
+
+    Returns (text, font_size, fits_on_one_line, note_included).
+    fits_on_one_line False means even the shortened title has to wrap, and it
+    should be added to TITLE_OVERRIDES.
     """
     from reportlab.pdfbase.pdfmetrics import stringWidth
 
     text = TITLE_OVERRIDES.get(title.strip(), title).strip()
-    width = stringWidth(text, font_name, base_size)
-    if width <= max_width:
-        return text, base_size, True
 
-    # Font size scales linearly with width, so this is the exact size that fits.
-    # Round down to a tenth so rounding never pushes it back over the edge.
-    needed = math.floor((base_size * max_width / width) * 10) / 10
-    if needed >= min_size:
-        return text, needed, True
+    def size_for(candidate):
+        width = stringWidth(candidate, font_name, base_size)
+        if width <= max_width:
+            return base_size
+        # Font size scales linearly with width, so this is the exact size that
+        # fits. Round down to a tenth so rounding never pushes it back over.
+        return math.floor((base_size * max_width / width) * 10) / 10
 
-    return text, min_size, False
+    if note:
+        annotated = f"{text} ({note})"
+        size = size_for(annotated)
+        if size >= min_size:
+            return annotated, size, True, True
+
+    size = size_for(text)
+    if size >= min_size:
+        return text, size, True, False
+    return text, min_size, False, False
+
+
+# Footnote markers for a single page. Same glyph in different colors, so two
+# footnotes on one page stay tellable apart at a glance.
+FOOTNOTE_MARKERS = [
+    ('*', '#000000'),
+    ('*', '#A51C30'),  # crimson
+    ('*', '#1F4E9C'),  # blue
+    ('*', '#1B6B3A'),  # green
+]
+
+
+def marker_for(index):
+    """(glyph, hex colour) for the index-th footnote on a page."""
+    return FOOTNOTE_MARKERS[index % len(FOOTNOTE_MARKERS)]
+
+
+def canonical_person_name(first, last):
+    """Display name for an instructor, consistent across every page.
+
+    The source spreadsheets carry a middle initial for the same person on some
+    rows and not others (Logan S McCarty in spring, Logan McCarty in fall), which
+    makes one person read as two. Drop a trailing lone initial from the first
+    name. A first name that is only an initial ("C." Vafa) is left alone.
+    """
+    first = str(first).strip()
+    last = str(last).strip()
+    if re.search(r'\S', first):
+        first = re.sub(r'\s+[A-Za-z]\.?$', '', first).strip()
+    return f"{first} {last}".strip()

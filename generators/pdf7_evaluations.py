@@ -12,7 +12,7 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
-                     fit_seminar_title, TITLE_OVERRIDES)
+                     fit_seminar_title, TITLE_OVERRIDES, canonical_person_name)
 
 # Table cell padding, needed both by the TableStyle and by the title fitting so
 # the two agree on how much room a title actually has.
@@ -121,9 +121,8 @@ def create_pdf7(department, output_path, df):
         sem_num = str(row.get(column_mapping.get('Seminar #', 'SEM#'), ''))
         title_text = str(row.get(column_mapping.get('Seminar Title', 'TITLE'), ''))
 
-        fname = str(row.get('FIRST  NAME', ''))
-        lname = str(row.get('LAST NAME', ''))
-        professor = f"{fname} {lname}".strip()
+        professor = canonical_person_name(row.get('FIRST  NAME', ''),
+                                          row.get('LAST NAME', ''))
         max_professor_length = max(max_professor_length, len(professor))
 
         term = str(row.get(column_mapping.get('Term', 'TERM'), ''))
@@ -169,7 +168,7 @@ def create_pdf7(department, output_path, df):
     oversized_titles = []
 
     for sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q in raw_rows:
-        text, size, fits = fit_seminar_title(title_text, title_space)
+        text, size, fits, _ = fit_seminar_title(title_text, title_space)
         if not fits:
             oversized_titles.append(title_text.strip())
         title_style = ParagraphStyle(f'Title{size}', parent=styles['Normal'],

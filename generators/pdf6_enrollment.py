@@ -16,7 +16,8 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
-                     fit_seminar_title, TITLE_OVERRIDES)
+                     fit_seminar_title, TITLE_OVERRIDES, canonical_person_name,
+                     marker_for)
 
 # Table cell padding, needed both by the TableStyle and by the title fitting so
 # the two agree on how much room a title actually has.
@@ -60,6 +61,26 @@ def get_all_departments(df):
             all_depts.add(str(dept))
 
     return sorted(all_depts)
+
+
+def build_co_teacher_index(df, column_mapping):
+    """{(sem, term, title): [surname, ...]} for seminars with several teachers.
+
+    Co-teachers sit on separate rows that share a seminar and are often in
+    different departments, so this has to be read from the full dataset.
+    """
+    sem_col = column_mapping.get('Seminar #', 'Sem#')
+    title_col = column_mapping.get('Seminar Title', 'Title')
+    term_col = column_mapping.get('Term', 'Term')
+
+    index = {}
+    for _, row in df.iterrows():
+        key = (str(row.get(sem_col, '')), str(row.get(term_col, '')),
+               str(row.get(title_col, '')).strip())
+        surname = str(row.get('LName', '')).strip()
+        if surname and surname not in index.setdefault(key, []):
+            index[key].append(surname)
+    return {k: v for k, v in index.items() if len(v) > 1}
 
 
 def create_pdf6(department, output_path, df):
@@ -122,13 +143,18 @@ def create_pdf6(department, output_path, df):
     raw_rows = []
     max_professor_length = 0
 
+    # Co-teachers are separate rows sharing a seminar, and they are often in
+    # different departments, so this is read from the whole dataset rather than
+    # this department's slice. Each row then credits its counterpart by surname,
+    # matching how the past-year Q report writes it.
+    co_teachers = build_co_teacher_index(df, column_mapping)
+
     for _, row in dept_data.iterrows():
         sem_num = str(row.get(column_mapping.get('Seminar #', 'Sem#'), ''))
         title_text = str(row.get(column_mapping.get('Seminar Title', 'Title'), ''))
 
-        fname = row.get('Fname', '')
-        lname = row.get('LName', '')
-        professor = f"{fname} {lname}".strip()
+        lname = str(row.get('LName', '')).strip()
+        professor = canonical_person_name(row.get('Fname', ''), lname)
         max_professor_length = max(max_professor_length, len(professor))
 
         term = str(row.get(column_mapping.get('Term', 'Term'), ''))
@@ -140,7 +166,12 @@ def create_pdf6(department, output_path, df):
         except (TypeError, ValueError):
             sections = 1
 
-        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled, sections])
+        others = [n for n in co_teachers.get((sem_num, term, title_text.strip()), [])
+                  if n != lname]
+        note = f"Co-teaching with {', '.join(others)}" if others else ''
+
+        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled,
+                         sections, note])
 
     # Width is measured against the titles as they will actually print, so a
     # shortened title does not reserve space for its full original length.
@@ -176,29 +207,50 @@ def create_pdf6(department, output_path, df):
     title_space = (optimal_title * inch) - (LEFT_PADDING + RIGHT_PADDING)
     table_data = [expected_columns]
     oversized_titles = []
-    section_notes = []
+    footnotes = []          # (glyph, colour, text) in the order they appear
 
-    for sem_num, title_text, professor, term, apps, enrolled, sections in raw_rows:
-        text, size, fits = fit_seminar_title(title_text, title_space)
+    def next_marker(text):
+        # Pinned to 8pt so the marker stays legible even when it rides on a
+        # title that had to shrink.
+        glyph, colour = marker_for(len(footnotes))
+        footnotes.append((glyph, colour, text))
+        return f'<font color="{colour}" size="8">{glyph}</font>'
+
+    for (sem_num, title_text, professor, term, apps, enrolled,
+         sections, note) in raw_rows:
+        text, size, fits, note_shown = fit_seminar_title(
+            title_text, title_space, note=note)
         if not fits:
             oversized_titles.append(title_text.strip())
         title_style = ParagraphStyle(f'Title{size}', parent=styles['Normal'],
                                      fontName='Helvetica', fontSize=size,
                                      leading=size + 1.5, alignment=TA_LEFT)
+        title_markup = escape(text)
 
+        # The co-teaching credit rides on the title when it fits. When it does
+        # not, it moves to a footnote so the title stays readable.
+        if note and not note_shown:
+            title_markup += ' ' + next_marker(f"{note}.")
+
+        professor_markup = escape(professor)
         # A seminar run as several sections in one term is a single row here,
         # because the registrar reports its applications and enrollment
         # combined. Mark it so the row does not read as a single section.
         if sections > 1:
-            professor = f"*{professor}"
-            section_notes.append(
-                f"* {professor.lstrip('*')} taught {NUMBER_WORDS.get(sections, sections)} "
-                f"sections of this seminar in the same term, counted as "
-                f"{NUMBER_WORDS.get(sections, sections)} seminars in the program total. "
-                f"The applications and enrollment shown combine all sections.")
+            count = NUMBER_WORDS.get(sections, sections)
+            marker = next_marker(
+                f"Prof. {professor.split()[-1]} taught {count} sections of this "
+                f"seminar in the same term, counted as {count} seminars in the "
+                f"program total. The applications and enrollment shown combine "
+                f"all sections.")
+            professor_markup = marker + professor_markup
 
-        table_data.append([sem_num, Paragraph(escape(text), title_style),
-                           professor, term, apps, enrolled])
+        professor_style = ParagraphStyle('Prof', parent=styles['Normal'],
+                                         fontName='Helvetica-Bold', fontSize=10,
+                                         leading=12, alignment=TA_LEFT)
+        table_data.append([sem_num, Paragraph(title_markup, title_style),
+                           Paragraph(professor_markup, professor_style),
+                           term, apps, enrolled])
 
     table = Table(table_data, colWidths=col_widths)
 
@@ -228,16 +280,17 @@ def create_pdf6(department, output_path, df):
 
     story.append(table)
 
-    # Footnotes sit above the legend so the asterisk is explained before the
+    # Footnotes sit above the legend so each marker is explained before the
     # reader reaches the enrollment caveat.
-    if section_notes:
+    if footnotes:
         story.append(Spacer(1, 14))
-        note_style = ParagraphStyle('SectionNote', parent=styles['Normal'],
+        note_style = ParagraphStyle('Footnote', parent=styles['Normal'],
                                     fontSize=9, alignment=TA_CENTER,
                                     textColor=colors.HexColor('#333333'),
                                     fontName='Helvetica')
-        for note in section_notes:
-            story.append(Paragraph(escape(note), note_style))
+        for glyph, colour, text in footnotes:
+            story.append(Paragraph(
+                f'<font color="{colour}">{glyph}</font> {escape(text)}', note_style))
 
     # Legend
     story.append(Spacer(1, 20))
