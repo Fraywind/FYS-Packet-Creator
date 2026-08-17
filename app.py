@@ -179,8 +179,8 @@ def generate_packets():
         # PDF 6 (Enrollment - from APPLICATION_CURRENT.xlsx)
         if enrollment_df is not None:
             try:
-                pdf6_path = os.path.join(dept_folder, f"6. [{sanitized}] 2025\u20132026 Enrollment Report.pdf")
-                create_pdf6(dept, pdf6_path, enrollment_df)
+                pdf6_path = os.path.join(dept_folder, f"6. [{sanitized}] 2026\u20132027 Enrollment Report.pdf")
+                oversized_titles.update(create_pdf6(dept, pdf6_path, enrollment_df) or [])
                 dept_pdfs.append('PDF 6')
                 results['pdfs_generated'] += 1
             except Exception as e:
@@ -251,7 +251,10 @@ def generate_packets():
             '  - Page 1 chart: add the new academic year + its seminar count in',
             '      generators/pdf1_seminar_counts.py (DEFAULT_YEARS and DEFAULT_COUNTS).',
             '      This cycle: 26-27 = 116.',
-            '  - Page 6 title year: generators/pdf6_enrollment.py ("2025–2026 Enrollment Report").',
+            '  - Page 6 title year: generators/pdf6_enrollment.py ("2026–2027 Enrollment',
+            '      Report") and its output filename in app.py. Page 6 covers the UPCOMING',
+            '      year, so it always reads one year ahead of page 7. Rebuild its input',
+            '      with tools/build_pdf6_input.py.',
             '  - Page 7 title year: generators/pdf7_evaluations.py ("2025–2026 Enrollment and',
             '      Evaluations") and its output filename in app.py.',
             '  - Page 2 (% by rank) is computed from the master spreadsheet — no manual edit,',
