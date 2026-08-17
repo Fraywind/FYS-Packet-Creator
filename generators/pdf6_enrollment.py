@@ -23,6 +23,8 @@ from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
 LEFT_PADDING = 4
 RIGHT_PADDING = 4
 
+NUMBER_WORDS = {2: 'two', 3: 'three', 4: 'four'}
+
 
 def load_enrollment_data(file_path):
     """Load APPLICATION_CURRENT.xlsx and return DataFrame."""
@@ -133,7 +135,12 @@ def create_pdf6(department, output_path, df):
         apps = str(row.get(column_mapping.get('# of Apps', 'Total Appl Count'), ''))
         enrolled = str(row.get(column_mapping.get('Enrolled', 'Placed'), ''))
 
-        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled])
+        try:
+            sections = int(row.get('Sections', 1) or 1)
+        except (TypeError, ValueError):
+            sections = 1
+
+        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled, sections])
 
     # Width is measured against the titles as they will actually print, so a
     # shortened title does not reserve space for its full original length.
@@ -169,14 +176,27 @@ def create_pdf6(department, output_path, df):
     title_space = (optimal_title * inch) - (LEFT_PADDING + RIGHT_PADDING)
     table_data = [expected_columns]
     oversized_titles = []
+    section_notes = []
 
-    for sem_num, title_text, professor, term, apps, enrolled in raw_rows:
+    for sem_num, title_text, professor, term, apps, enrolled, sections in raw_rows:
         text, size, fits = fit_seminar_title(title_text, title_space)
         if not fits:
             oversized_titles.append(title_text.strip())
         title_style = ParagraphStyle(f'Title{size}', parent=styles['Normal'],
                                      fontName='Helvetica', fontSize=size,
                                      leading=size + 1.5, alignment=TA_LEFT)
+
+        # A seminar run as several sections in one term is a single row here,
+        # because the registrar reports its applications and enrollment
+        # combined. Mark it so the row does not read as a single section.
+        if sections > 1:
+            professor = f"*{professor}"
+            section_notes.append(
+                f"* {professor.lstrip('*')} taught {NUMBER_WORDS.get(sections, sections)} "
+                f"sections of this seminar in the same term, counted as "
+                f"{NUMBER_WORDS.get(sections, sections)} seminars in the program total. "
+                f"The applications and enrollment shown combine all sections.")
+
         table_data.append([sem_num, Paragraph(escape(text), title_style),
                            professor, term, apps, enrolled])
 
@@ -207,6 +227,17 @@ def create_pdf6(department, output_path, df):
     table.setStyle(style)
 
     story.append(table)
+
+    # Footnotes sit above the legend so the asterisk is explained before the
+    # reader reaches the enrollment caveat.
+    if section_notes:
+        story.append(Spacer(1, 14))
+        note_style = ParagraphStyle('SectionNote', parent=styles['Normal'],
+                                    fontSize=9, alignment=TA_CENTER,
+                                    textColor=colors.HexColor('#333333'),
+                                    fontName='Helvetica')
+        for note in section_notes:
+            story.append(Paragraph(escape(note), note_style))
 
     # Legend
     story.append(Spacer(1, 20))

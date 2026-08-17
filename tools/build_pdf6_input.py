@@ -117,10 +117,15 @@ def fetch_catalog(source):
                                          block.group(1), re.S):
                 people.append((re.sub('<[^>]+>', '', name).strip(), dept.strip()))
 
-        # Seminars offered in two sections appear twice with the same number;
-        # the enrollment export merges them, so one entry per key is correct.
-        catalog.setdefault((title_key(title), term_key(term)),
-                           {'sem': sem, 'people': people})
+        # A seminar run as two sections in the same term is listed twice under
+        # the same number. The enrollment export merges those into one row, so
+        # one entry per key is correct, but record how many sections there were
+        # so the packet can say so.
+        key = (title_key(title), term_key(term))
+        if key in catalog:
+            catalog[key]['sections'] += 1
+        else:
+            catalog[key] = {'sem': sem, 'people': people, 'sections': 1}
     return catalog
 
 
@@ -213,17 +218,45 @@ def main():
                 'Term': season(row['Term']),
                 'Total Appl Count': row.get('Total Appl Count', ''),
                 'Placed': row.get('Placed', ''),
+                'Sections': entry.get('sections', 1),
             })
 
     out = pd.DataFrame(rows, columns=['Department', 'Sem#', 'Title', 'Fname',
-                                      'LName', 'Term', 'Total Appl Count', 'Placed'])
+                                      'LName', 'Term', 'Total Appl Count',
+                                      'Placed', 'Sections'])
     out.to_excel(args.out, index=False)
+
+    # A seminar run as two sections in one term is one row here but two
+    # seminars in the program's own count, so reconcile the two explicitly.
+    extra_sections = int((out.drop_duplicates(['Sem#', 'Term'])['Sections'] - 1).sum())
+    seminars = len(enrollment) + extra_sections
 
     print(f"enrollment rows read : {len(enrollment)}")
     print(f"instructor rows out  : {len(out)}  "
           f"(Fall {sum(out['Term'] == 'Fall')}, Spring {sum(out['Term'] == 'Spring')})")
     print(f"departments covered  : {out['Department'].nunique()}")
+    print(f"seminar count        : {seminars}  "
+          f"({len(enrollment)} rows + {extra_sections} extra section(s))")
     print(f"written              : {args.out}")
+
+    # Different people can share a surname, so these must never be merged.
+    # Print them side by side so a person can confirm they resolved apart.
+    surnames = out.groupby(out['LName'].str.lower())
+    shared = {name: group for name, group in surnames
+              if group[['Fname', 'LName']].drop_duplicates().shape[0] > 1}
+    if shared:
+        print("\nSHARED SURNAMES (confirm these are different people):")
+        for _, group in shared.items():
+            for _, r in group.drop_duplicates(['Fname', 'LName']).iterrows():
+                print(f"  - {r['Fname'] + ' ' + r['LName']:<28} -> {r['Department']}")
+
+    multi = out[out['Sections'] > 1].drop_duplicates(['Sem#', 'Term'])
+    if len(multi):
+        print("\nRUN AS MULTIPLE SECTIONS IN ONE TERM (noted on the packet page):")
+        for _, r in multi.iterrows():
+            print(f"  - {r['Sem#']} {r['Title'][:44]} | {r['Fname']} {r['LName']} "
+                  f"| {r['Term']} | {r['Sections']} sections")
+
     for label, items in (('NO SEMINAR NUMBER', no_number),
                          ('DEPARTMENT NEEDS A LOOK', no_department)):
         if items:
