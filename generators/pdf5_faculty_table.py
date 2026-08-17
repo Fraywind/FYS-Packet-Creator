@@ -318,6 +318,32 @@ def legend_key(marker):
 # PDF Builder
 # ---------------------------------------------------------------------------
 
+def year_label_schemes(year_columns):
+    """Year-header label options for the table, widest first.
+
+    Yields the full labels ("2013-14") first, so nothing changes for the
+    departments that already fit. The fallbacks keep the first column spelled
+    out in full, so a reader can see what the shortened ones mean, and stay in
+    academic-year order:
+
+        2013-14   '14-'15   '15-'16   ...
+        2013-14   '15       '16       ...   (only if the middle form is still
+                                             too wide)
+    """
+    full = [str(y).strip() for y in year_columns]
+    yield full
+    if len(full) < 2:
+        return
+
+    def parts(label):
+        head, _, tail = label.partition('-')
+        return head, tail
+
+    if all('-' in y and len(parts(y)[0]) == 4 for y in full):
+        yield [full[0]] + [f"'{parts(y)[0][2:]}-'{parts(y)[1]}" for y in full[1:]]
+        yield [full[0]] + [f"'{parts(y)[1]}" for y in full[1:]]
+
+
 def create_pdf5(dept, output_path, headers, dept_data):
     """Create PDF 5 (Faculty Teaching Table) for a specific department.
 
@@ -377,8 +403,7 @@ def create_pdf5(dept, output_path, headers, dept_data):
     sorted_data = sorted(dept_data, key=sort_key)
 
     # --- Build table data ---
-    table_headers = ['Professor', 'Rank'] + year_columns
-    table_data = [table_headers]
+    table_data = [['Professor', 'Rank'] + year_columns]
 
     for row in sorted_data:
         table_row = []
@@ -404,6 +429,35 @@ def create_pdf5(dept, output_path, headers, dept_data):
         table_data.append(table_row)
 
     # --- Style the table ---
+    # A department with long faculty names can push this table wider than the
+    # page. ReportLab centres an over-wide table, so it runs off both edges at
+    # once and the first letter of every name and the last year column are
+    # physically cut off. Shorten the year headers, but only as far as needed
+    # and only for the departments that would otherwise be cut.
+    def natural_width(labels):
+        probe = Table([['Professor', 'Rank'] + labels] + table_data[1:], repeatRows=1)
+        probe.setStyle(TableStyle([('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+                                   ('FONTSIZE', (0, 0), (-1, 0), 10),
+                                   ('FONTNAME', (0, 1), (1, -1), 'Helvetica-Bold'),
+                                   ('FONTSIZE', (0, 1), (1, -1), 11),
+                                   ('FONTSIZE', (2, 1), (-1, -1), 12),
+                                   ('LEFTPADDING', (0, 0), (-1, -1), 4),
+                                   ('RIGHTPADDING', (0, 0), (-1, -1), 4)]))
+        return probe.wrap(doc.width, doc.height)[0]
+
+    schemes = list(year_label_schemes(year_columns))
+    labels = schemes[0]
+    # An over-wide table is centred, so it only loses text once it reaches the
+    # page edge, not merely the margin. Departments that stay on the page are
+    # left exactly as they were. The ones that would be cut are shortened until
+    # they sit properly inside the margins.
+    if natural_width(labels) > doc.pagesize[0]:
+        for candidate in schemes[1:]:
+            labels = candidate
+            if natural_width(candidate) <= doc.width:
+                break
+
+    table_data[0] = ['Professor', 'Rank'] + labels
     table = Table(table_data, repeatRows=1)
 
     style = TableStyle([
