@@ -114,6 +114,7 @@ def generate_packets():
     # Generate PDFs for each department
     excluded_present = []
     oversized_titles = set()
+    trimmed_page5_years = {}
     for dept in sorted(all_depts):
         if not dept or dept == 'nan':
             continue
@@ -170,7 +171,9 @@ def generate_packets():
         if saved_data_by_dept and dept in saved_data_by_dept and saved_headers:
             try:
                 pdf5_path = os.path.join(dept_folder, f"5. [{sanitized}] Faculty Teaching Seminars by Name.pdf")
-                create_pdf5(dept, pdf5_path, saved_headers, saved_data_by_dept[dept])
+                dropped = create_pdf5(dept, pdf5_path, saved_headers, saved_data_by_dept[dept])
+                if dropped:
+                    trimmed_page5_years[dept] = dropped
                 dept_pdfs.append('PDF 5')
                 results['pdfs_generated'] += 1
             except Exception as e:
@@ -238,6 +241,17 @@ def generate_packets():
                 '(cut at the title\'s own colon or dash, do not paraphrase):',
             ]
             lines += [f'  - {t}' for t in sorted(oversized_titles)]
+        if trimmed_page5_years:
+            lines += [
+                '',
+                'Page 5 tables that start later than the others. These departments have',
+                'long faculty names, so the full table comes out wider than the paper and',
+                'would be cut at both edges. The earliest year columns were left off so',
+                'the year headings stay spelled out in full, the same as every other',
+                'department. Years left off:',
+            ]
+            lines += [f'  - {d}: {", ".join(str(y) for y in years)}'
+                      for d, years in sorted(trimmed_page5_years.items())]
         if results['errors']:
             lines += ['', 'Errors during generation:']
             lines += [f'  - {e}' for e in results['errors']]

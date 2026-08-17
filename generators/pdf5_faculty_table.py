@@ -318,30 +318,39 @@ def legend_key(marker):
 # PDF Builder
 # ---------------------------------------------------------------------------
 
-def year_label_schemes(year_columns):
-    """Year-header label options for the table, widest first.
+# Font sizes and padding decide how wide the table comes out. The width probe
+# in create_pdf5 measures with exactly these, so a measurement can never drift
+# from what is actually drawn.
+HEADER_FONT_SIZE = 10
+NAME_FONT_SIZE = 11
+MARK_FONT_SIZE = 12
+CELL_PADDING = 4
 
-    Yields the full labels ("2013-14") first, so nothing changes for the
-    departments that already fit. The fallbacks keep the first column spelled
-    out in full, so a reader can see what the shortened ones mean, and stay in
-    academic-year order:
 
-        2013-14   '14-'15   '15-'16   ...
-        2013-14   '15       '16       ...   (only if the middle form is still
-                                             too wide)
+def trim_years_to_fit(year_columns, fits):
+    """Drop the oldest year columns until the table fits on the page.
+
+    A department with long faculty names pushes the table wider than the page.
+    ReportLab centres an over-wide table, so it runs off both edges at once and
+    the first letter of every name and the last year column are physically cut
+    off.
+
+    Every department keeps its year headings spelled out in full ("2013-14",
+    "2014-15", ...). The few that would be cut start a year later instead, which
+    is the only difference between their table and everyone else's.
+
+    Args:
+        year_columns: All academic-year columns, oldest first.
+        fits: Callable taking a list of years and returning True if the table
+              built from them stays on the page.
+
+    Returns:
+        The years to show, oldest first. The full list when it already fits.
     """
-    full = [str(y).strip() for y in year_columns]
-    yield full
-    if len(full) < 2:
-        return
-
-    def parts(label):
-        head, _, tail = label.partition('-')
-        return head, tail
-
-    if all('-' in y and len(parts(y)[0]) == 4 for y in full):
-        yield [full[0]] + [f"'{parts(y)[0][2:]}-'{parts(y)[1]}" for y in full[1:]]
-        yield [full[0]] + [f"'{parts(y)[1]}" for y in full[1:]]
+    years = list(year_columns)
+    while len(years) > 1 and not fits(years):
+        years = years[1:]
+    return years
 
 
 def create_pdf5(dept, output_path, headers, dept_data):
@@ -365,6 +374,11 @@ def create_pdf5(dept, output_path, headers, dept_data):
         output_path: Full file path for the output PDF.
         headers: List of column headers from SAVED.xlsx.
         dept_data: List of row dicts for this department from SAVED.xlsx.
+
+    Returns:
+        The oldest year columns left off because the table would not have fit on
+        the page (see trim_years_to_fit), oldest first. Empty for the
+        departments that show every year, which is nearly all of them.
 
     Table styling:
         - Crimson header row with white text
@@ -403,81 +417,82 @@ def create_pdf5(dept, output_path, headers, dept_data):
     sorted_data = sorted(dept_data, key=sort_key)
 
     # --- Build table data ---
-    table_data = [['Professor', 'Rank'] + year_columns]
+    def build_table(years):
+        """The whole table, header row first, for a given set of year columns."""
+        rows = [['Professor', 'Rank'] + [str(y).strip() for y in years]]
 
-    for row in sorted_data:
-        table_row = []
+        for row in sorted_data:
+            table_row = []
 
-        # Professor name
-        professor = row.get('Professor', '')
-        table_row.append(str(professor))
+            # Professor name
+            professor = row.get('Professor', '')
+            table_row.append(str(professor))
 
-        # Rank (converted to full name, then abbreviated for display)
-        rank = row.get('Rank', '')
-        if rank:
-            full_rank = get_rank_full_name(rank)
-            abbreviated = get_rank_abbreviation(full_rank)
-            clean = abbreviated.replace('<br/>', '\n').replace('<b>', '').replace('</b>', '')
-            table_row.append(clean)
-        else:
-            table_row.append('')
+            # Rank (converted to full name, then abbreviated for display)
+            rank = row.get('Rank', '')
+            if rank:
+                full_rank = get_rank_full_name(rank)
+                abbreviated = get_rank_abbreviation(full_rank)
+                clean = abbreviated.replace('<br/>', '\n').replace('<b>', '').replace('</b>', '')
+                table_row.append(clean)
+            else:
+                table_row.append('')
 
-        # Year columns: convert data markers to display symbols
-        for year in year_columns:
-            table_row.append(marker_symbol(row.get(year, '')))
+            # Year columns: convert data markers to display symbols
+            for year in years:
+                table_row.append(marker_symbol(row.get(year, '')))
 
-        table_data.append(table_row)
+            rows.append(table_row)
 
-    # --- Style the table ---
-    # A department with long faculty names can push this table wider than the
-    # page. ReportLab centres an over-wide table, so it runs off both edges at
-    # once and the first letter of every name and the last year column are
-    # physically cut off. Shorten the year headers, but only as far as needed
-    # and only for the departments that would otherwise be cut.
-    def natural_width(labels):
-        probe = Table([['Professor', 'Rank'] + labels] + table_data[1:], repeatRows=1)
-        probe.setStyle(TableStyle([('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-                                   ('FONTSIZE', (0, 0), (-1, 0), 10),
-                                   ('FONTNAME', (0, 1), (1, -1), 'Helvetica-Bold'),
-                                   ('FONTSIZE', (0, 1), (1, -1), 11),
-                                   ('FONTSIZE', (2, 1), (-1, -1), 12),
-                                   ('LEFTPADDING', (0, 0), (-1, -1), 4),
-                                   ('RIGHTPADDING', (0, 0), (-1, -1), 4)]))
-        return probe.wrap(doc.width, doc.height)[0]
+        return rows
 
-    schemes = list(year_label_schemes(year_columns))
-    labels = schemes[0]
-    # An over-wide table is centred, so it only loses text once it reaches the
-    # page edge, not merely the margin. Departments that stay on the page are
-    # left exactly as they were. The ones that would be cut are shortened until
-    # they sit properly inside the margins.
-    if natural_width(labels) > doc.pagesize[0]:
-        for candidate in schemes[1:]:
-            labels = candidate
-            if natural_width(candidate) <= doc.width:
-                break
+    # The style commands that decide the column widths. The probe below and the
+    # real table both start from these, so what is measured is what is drawn.
+    layout_style = [
+        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 0), (-1, 0), HEADER_FONT_SIZE),
+        ('FONTNAME', (0, 1), (1, -1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0, 1), (1, -1), NAME_FONT_SIZE),
+        ('FONTNAME', (2, 1), (-1, -1), 'Helvetica'),
+        ('FONTSIZE', (2, 1), (-1, -1), MARK_FONT_SIZE),
+        ('LEFTPADDING', (0, 0), (-1, -1), CELL_PADDING),
+        ('RIGHTPADDING', (0, 0), (-1, -1), CELL_PADDING),
+    ]
 
-    table_data[0] = ['Professor', 'Rank'] + labels
+    def fits_on_page(years):
+        """Does the table built from these years stay inside the paper?
+
+        An over-wide table is centred, so it only loses text once it reaches the
+        page edge, not merely the margin. Measured with ReportLab's own layout
+        rather than estimated, so this keeps working as years are added.
+        """
+        probe = Table(build_table(years), repeatRows=1)
+        probe.setStyle(TableStyle(layout_style))
+        return probe.wrap(doc.width, doc.height)[0] <= doc.pagesize[0]
+
+    # Departments that fit keep every year. The ones that would be cut off start
+    # a year later; from here on year_columns is only the years actually shown,
+    # so the cell colouring and the legend follow the table.
+    all_years = year_columns
+    year_columns = trim_years_to_fit(all_years, fits_on_page)
+    dropped_years = all_years[:len(all_years) - len(year_columns)]
+
+    table_data = build_table(year_columns)
     table = Table(table_data, repeatRows=1)
 
-    style = TableStyle([
+    # --- Style the table ---
+    style = TableStyle(layout_style + [
         # Header row: crimson background, white bold text
         ('BACKGROUND', (0, 0), (-1, 0), colors.HexColor('#8B0000')),
         ('TEXTCOLOR', (0, 0), (-1, 0), colors.white),
         ('ALIGN', (0, 0), (-1, 0), 'CENTER'),
-        ('FONTNAME', (0, 0), (-1, 0), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 0), (-1, 0), 10),
         ('BOTTOMPADDING', (0, 0), (-1, 0), 6),
 
-        # Name and Rank columns: left-aligned, bold
+        # Name and Rank columns: left-aligned
         ('ALIGN', (0, 1), (1, -1), 'LEFT'),
-        ('FONTNAME', (0, 1), (1, -1), 'Helvetica-Bold'),
-        ('FONTSIZE', (0, 1), (1, -1), 11),
 
         # Year data columns: centered
         ('ALIGN', (2, 1), (-1, -1), 'CENTER'),
-        ('FONTSIZE', (2, 1), (-1, -1), 12),
-        ('FONTNAME', (2, 1), (-1, -1), 'Helvetica'),
 
         # Grid and alternating row colors
         ('GRID', (0, 0), (-1, -1), 0.5, colors.grey),
@@ -486,8 +501,6 @@ def create_pdf5(dept, output_path, headers, dept_data):
         # Cell padding and alignment
         ('TOPPADDING', (0, 0), (-1, -1), 3),
         ('BOTTOMPADDING', (0, 0), (-1, -1), 3),
-        ('LEFTPADDING', (0, 0), (-1, -1), 4),
-        ('RIGHTPADDING', (0, 0), (-1, -1), 4),
         ('VALIGN', (0, 0), (-1, -1), 'MIDDLE'),
     ])
 
@@ -562,3 +575,4 @@ def create_pdf5(dept, output_path, headers, dept_data):
                 story.append(Paragraph(text, sty))
 
     doc.build(story)
+    return dropped_years
