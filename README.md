@@ -37,19 +37,21 @@ its own pages, and the rest of the packet is still produced.
 
 | File | Feeds | What it is | When it is ready |
 |------|-------|-----------|------------------|
-| **SAVED.xlsx** | Pages 1, 2, 3, 4, 5 | Master faculty teaching history, one column per academic year | Maintained year-round, updated once the new teaching roster is out |
-| **CURRENT SEMINARS OFFERED.xlsx** | Page 6 | The seminars running this year, with applications and placements | Usually once the course registration deadline has passed |
-| **HOLYGRAIL.xlsx** | Page 7 | Last year's enrollment with Q report scores merged in | After HCIR releases the Q reports |
+| **FYSP Master.xlsx** | Pages 1, 2, 3, 4, 5 | Faculty teaching history, one column per academic year | Maintained year-round, updated once the new teaching roster is out |
+| **FYSP Current Year Seminars.xlsx** | Page 6 | The seminars running this year, with applications and placements | Usually once the course registration deadline has passed |
+| **FYSP Past Year Enrollment and Q Reports.xlsx** | Page 7 | Last year's enrollment with Q report scores merged in | After HCIR releases the Q reports |
 
 Notes on each:
 
-- **SAVED.xlsx** is now maintained as `FYSP Master Packet Data.xlsx`. Its yearly column is written
-  by a separate project, [FYS-New-Year-Matching](#related-projects). This tool only reads it.
-- **CURRENT SEMINARS OFFERED.xlsx** was called `APPLICATION_CURRENT.xlsx` until August 2026. The
-  old name still uploads fine. Build it with `tools/build_pdf6_input.py` from the registrar
+- **FYSP Master.xlsx** has its new academic-year column written by a separate project,
+  [FYS-New-Year-Matching](#related-projects). This tool only reads the file.
+- **FYSP Current Year Seminars.xlsx** is built with `tools/build_pdf6_input.py` from the registrar
   enrollment export.
-- **HOLYGRAIL.xlsx** is largely last year's Current Seminars Offered file with Q scores merged in.
-  A clearer name for it in the future would be `EVALUATIONS_PRIOR.xlsx`.
+- **FYSP Past Year Enrollment and Q Reports.xlsx** is largely last year's Current Year Seminars
+  file with the Q scores merged in.
+
+The upload slots go by position on the page, not by file name, so a file that is still named
+something else on disk uploads into the right slot.
 
 ## What you get
 
@@ -57,13 +59,13 @@ For each department (for example `[AAAS]`, `[HLS]`, `[SEAS]`):
 
 | PDF | Title | Source |
 |-----|-------|--------|
-| 1 | Number of First-Year Seminars by Academic Year | SAVED.xlsx |
-| 2 | Percentage of Seminars by Faculty Rank | SAVED.xlsx |
-| 3 | Seminars Taught per Year (3D graph) | SAVED.xlsx |
-| 4 | Seminars Taught per Year per Rank | SAVED.xlsx |
-| 5 | Faculty Teaching Seminars by Name | SAVED.xlsx |
-| 6 | Current Year Enrollment Report | CURRENT SEMINARS OFFERED.xlsx |
-| 7 | Prior Year Enrollment and Evaluations | HOLYGRAIL.xlsx |
+| 1 | Number of First-Year Seminars by Academic Year | FYSP Master.xlsx |
+| 2 | Percentage of Seminars by Faculty Rank | FYSP Master.xlsx |
+| 3 | Seminars Taught per Year (3D graph) | FYSP Master.xlsx |
+| 4 | Seminars Taught per Year per Rank | FYSP Master.xlsx |
+| 5 | Faculty Teaching Seminars by Name | FYSP Master.xlsx |
+| 6 | Current Year Enrollment Report | FYSP Current Year Seminars.xlsx |
+| 7 | Prior Year Enrollment and Evaluations | FYSP Past Year Enrollment and Q Reports.xlsx |
 | ALL | Combined packet with all of the above | All three files |
 
 Everything lands in `output/`, one folder per department, plus a notes file.
@@ -85,8 +87,7 @@ If nothing needs a second look, the page says so and the notes are still one cli
 
 ## Rules the tool follows
 
-These are the decisions the tool makes on its own, so you know what to expect and what it will
-never quietly do.
+These are the decisions the tool makes on its own, so you know what to expect.
 
 **Every page fits on its paper.** Nothing is ever printed past the edge and nothing overlaps.
 
@@ -103,18 +104,18 @@ never quietly do.
   the year headings spelled out the same as every other department. The run reports exactly which
   departments and which years.
 
-**Nothing is invented.** A department with no rows in a given file simply has no page from that
-file. A missing Q score stays missing. The tool never fills a gap with a guess.
+**Nothing is filled in for you.** A department with no rows in a file gets no page from that file.
+A missing Q score is left blank. The tool never puts in a number that is not in the spreadsheet.
 
-**Uncertain cases are reported, not resolved.** Anything the tool cannot decide goes into
-`output/README.txt` for a person to handle.
+**Anything unclear is written down, not guessed at.** If the tool cannot decide something, it goes
+into `output/README.txt` for a person to handle.
 
 **Every run starts clean.** `output/` is emptied at the start of each run, so what is in there is
 always from the most recent run and never a mix of two.
 
 ## What still needs a person
 
-- Verifying joint appointments and co-teaching in the master spreadsheet before a packet cycle.
+- Verifying joint appointments and co-teaching in FYSP Master before a packet cycle.
 - Adding shortened forms for seminar titles the run flags.
 - Bumping the hardcoded year labels each cycle. `output/README.txt` lists them with the exact file
   and the value they need.
@@ -123,11 +124,12 @@ always from the most recent run and never a mix of two.
 
 ## Yearly cycle
 
-1. Update the master spreadsheet's new academic-year column (see
+1. Add the new academic-year column to FYSP Master (see
    [FYS-New-Year-Matching](#related-projects)).
-2. Once course registration closes, build the Current Seminars Offered file with
+2. Once course registration closes, build FYSP Current Year Seminars with
    `tools/build_pdf6_input.py`.
-3. Merge last year's Q report scores into last year's roster to produce the new HOLYGRAIL file.
+3. Merge last year's Q report scores into last year's Current Year Seminars file to produce the
+   new FYSP Past Year Enrollment and Q Reports.
 4. Bump the hardcoded year labels listed in `output/README.txt`.
 5. Run the tool, read `output/README.txt`, then send the packets out.
 
@@ -143,20 +145,21 @@ checklist, read the staff guide:
 
 Full details, notation, and special cases are in the handbook.
 
-**SAVED.xlsx**. Columns: `Professor`, `Rank`, `Department`, then one column per academic year (for
-example `2014-15`, `2015-16`). Each year cell uses one of `X`, `XX`, `X*`, `X!`, `X!!`, `XXSTAR`.
+**FYSP Master.xlsx**. Columns: `Professor`, `Rank`, `Department`, then one column per academic year
+(for example `2014-15`, `2015-16`). Each year cell uses one of `X`, `XX`, `X*`, `X!`, `X!!`,
+`XXSTAR`.
 
-**CURRENT SEMINARS OFFERED.xlsx**. Columns: `Department`, `Sem#`, `Term`, `Title`, `Fname`,
+**FYSP Current Year Seminars.xlsx**. Columns: `Department`, `Sem#`, `Term`, `Title`, `Fname`,
 `LName`, `Total Appl Count`, `Placed`.
 
-**HOLYGRAIL.xlsx**. Columns: `DEPT`, `SEM#`, `TERM`, `TITLE`, `FIRST  NAME` (two spaces),
-`LAST NAME`, `APPL#`, `ENROLL`, `SEMQ`, `INST Q`.
+**FYSP Past Year Enrollment and Q Reports.xlsx**. Columns: `DEPT`, `SEM#`, `TERM`, `TITLE`,
+`FIRST  NAME` (two spaces), `LAST NAME`, `APPL#`, `ENROLL`, `SEMQ`, `INST Q`.
 
 ## Related projects
 
 **FYS-New-Year-Matching** is a separate, standalone project that writes the new academic-year
-column into the master spreadsheet from the my.harvard teaching roster. It has its own rules for
-markers, aliases, and names that must never be auto-matched. This repo only consumes the result.
+column into FYSP Master from the my.harvard teaching roster. It has its own rules for markers,
+aliases, and names that must never be auto-matched. This repo only consumes the result.
 
 ## Stopping the server
 

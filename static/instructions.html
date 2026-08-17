@@ -558,8 +558,8 @@ ul.bullets li::before {
         <li><a href="#produces"><span class="toc-num">2</span><span>What you get out of it</span></a></li>
         <li><a href="#workbooks"><span class="toc-num">3</span><span>The three input files</span></a></li>
         <li><a href="#saved" class="toc-sub">Faculty Teaching History</a></li>
-        <li><a href="#applications" class="toc-sub">Current Seminars Offered</a></li>
-        <li><a href="#holygrail" class="toc-sub">Past Q Reports</a></li>
+        <li><a href="#applications" class="toc-sub">Current Year Seminars</a></li>
+        <li><a href="#holygrail" class="toc-sub">Past Year Enrollment and Q Reports</a></li>
         <li><a href="#running"><span class="toc-num">4</span><span>Running the tool</span></a></li>
         <li><a href="#pdfs"><span class="toc-num">5</span><span>The seven PDFs explained</span></a></li>
         <li><a href="#troubleshooting"><span class="toc-num">6</span><span>When something looks wrong</span></a></li>
@@ -590,11 +590,11 @@ ul.bullets li::before {
             FYSP packets used to be put together by hand: one folder of reports per department, forty-something departments, every year. This tool does that work automatically. You give it three Excel files that the FYSP office already maintains, and it produces every department&rsquo;s packet in about a minute.
         </p>
 
-        <p>The three files, named here by what they actually are rather than by their internal filenames:</p>
+        <p>The three files:</p>
         <ul class="bullets">
-            <li><strong>Faculty Teaching History</strong> (<code>SAVED.xlsx</code>). Who taught what, year by year. Produces PDFs 1, 2, 4, 5.</li>
-            <li><strong>Current Seminars Offered</strong> (<code>CURRENT SEMINARS OFFERED.xlsx</code>). This year&rsquo;s seminars and how popular they were. Produces PDF 6.</li>
-            <li><strong>Past Q Reports</strong> (<code>HOLYGRAIL.xlsx</code>). Last year&rsquo;s enrollment and student evaluations. Produces PDF 7.</li>
+            <li><strong>Faculty Teaching History</strong> (<code>FYSP Master.xlsx</code>). Who taught what, year by year. Produces PDFs 1, 2, 4, 5.</li>
+            <li><strong>Current Year Seminars</strong> (<code>FYSP Current Year Seminars.xlsx</code>). This year&rsquo;s seminars and how popular they were. Produces PDF 6.</li>
+            <li><strong>Past Year Enrollment and Q Reports</strong> (<code>FYSP Past Year Enrollment and Q Reports.xlsx</code>). Last year&rsquo;s enrollment and student evaluations. Produces PDF 7.</li>
         </ul>
 
         <div class="callout">
@@ -623,8 +623,8 @@ ul.bullets li::before {
                 <tr><td>2</td><td>% of Seminars According to Faculty Rank</td><td>Faculty Teaching History</td></tr>
                 <tr><td>4</td><td>Seminars Taught per Year per Rank</td><td>Faculty Teaching History</td></tr>
                 <tr><td>5</td><td>Faculty Teaching Seminars by Name</td><td>Faculty Teaching History</td></tr>
-                <tr><td>6</td><td>Current Year Enrollment Report</td><td>Current Seminars Offered</td></tr>
-                <tr><td>7</td><td>Prior Year Enrollment and Evaluations</td><td>Past Q Reports</td></tr>
+                <tr><td>6</td><td>Current Year Enrollment Report</td><td>Current Year Seminars</td></tr>
+                <tr><td>7</td><td>Prior Year Enrollment and Evaluations</td><td>Past Year Enrollment and Q Reports</td></tr>
                 <tr><td>ALL</td><td>Combined packet (1, 2, 4, 5, 6, 7)</td><td>All three</td></tr>
             </tbody>
         </table>
@@ -656,28 +656,28 @@ ul.bullets li::before {
             </thead>
             <tbody>
                 <tr>
-                    <td>SAVED.xlsx</td>
+                    <td>FYSP Master.xlsx</td>
                     <td>Faculty Teaching History</td>
                     <td>Internal FYSP file, updated each year by office staff.</td>
                 </tr>
                 <tr>
-                    <td>CURRENT SEMINARS OFFERED.xlsx</td>
-                    <td>Current Seminars Offered</td>
+                    <td>FYSP Current Year Seminars.xlsx</td>
+                    <td>Current Year Seminars</td>
                     <td>Pulled from the FYSP application portal, compiled by office staff each fall. <strong>Request HCIR for this data file.</strong></td>
                 </tr>
                 <tr>
-                    <td>HOLYGRAIL.xlsx</td>
-                    <td>Past Q Reports</td>
+                    <td>FYSP Past Year Enrollment and Q Reports.xlsx</td>
+                    <td>Past Year Enrollment and Q Reports</td>
                     <td>Compiled by office staff from the prior year&rsquo;s Q report scores and enrollment. <strong>Request HCIR for this data file.</strong></td>
                 </tr>
             </tbody>
         </table>
 
-        <!-- SAVED -->
+        <!-- FYSP Master -->
         <article id="saved" class="workbook">
             <header class="workbook-head">
                 <h3 class="workbook-name">Faculty Teaching History</h3>
-                <span class="workbook-filename">SAVED.xlsx</span>
+                <span class="workbook-filename">FYSP Master.xlsx</span>
             </header>
             <p class="workbook-produces">Produces <strong>PDFs 1, 2, 4, 5</strong></p>
 
@@ -736,11 +736,11 @@ ul.bullets li::before {
             </div>
         </article>
 
-        <!-- CURRENT SEMINARS OFFERED -->
+        <!-- FYSP Current Year Seminars -->
         <article id="applications" class="workbook">
             <header class="workbook-head">
-                <h3 class="workbook-name">Current Seminars Offered</h3>
-                <span class="workbook-filename">CURRENT SEMINARS OFFERED.xlsx</span>
+                <h3 class="workbook-name">Current Year Seminars</h3>
+                <span class="workbook-filename">FYSP Current Year Seminars.xlsx</span>
             </header>
             <p class="workbook-produces">Produces <strong>PDF 6</strong>. Current Year Enrollment Report</p>
 
@@ -785,11 +785,11 @@ ul.bullets li::before {
             </div>
         </article>
 
-        <!-- HOLYGRAIL -->
+        <!-- FYSP Past Year Enrollment and Q Reports -->
         <article id="holygrail" class="workbook">
             <header class="workbook-head">
-                <h3 class="workbook-name">Past Q Reports</h3>
-                <span class="workbook-filename">HOLYGRAIL.xlsx</span>
+                <h3 class="workbook-name">Past Year Enrollment and Q Reports</h3>
+                <span class="workbook-filename">FYSP Past Year Enrollment and Q Reports.xlsx</span>
             </header>
             <p class="workbook-produces">Produces <strong>PDF 7</strong>. Prior Year Enrollment and Evaluations</p>
 
@@ -803,7 +803,7 @@ ul.bullets li::before {
             </p>
             <ul class="bullets">
                 <li><strong>Q report evaluation scores</strong> for each seminar, from the student course evaluation system.</li>
-                <li><strong>Enrollment numbers</strong> from the prior year&rsquo;s Current Seminars Offered file. In effect, this year&rsquo;s Past Q Reports is largely last year&rsquo;s Current Seminars Offered with Q scores merged in.</li>
+                <li><strong>Enrollment numbers</strong> from the prior year&rsquo;s Current Year Seminars file. In effect, this year&rsquo;s Past Year Enrollment and Q Reports is largely last year&rsquo;s Current Year Seminars with Q scores merged in.</li>
             </ul>
             <p><strong>Request HCIR for this data file.</strong></p>
 
@@ -826,7 +826,7 @@ ul.bullets li::before {
 
             <div class="callout warn">
                 <strong>About the filename</strong>
-                The file is named <code>HOLYGRAIL.xlsx</code> for historical reasons. The tool expects this file to be uploaded into the &ldquo;Past Q Reports&rdquo; slot regardless of what the actual filename is on disk.
+                The tool goes by which upload slot you drop the file into, not by what it is called on disk. An older copy under a different name still works if you put it in the &ldquo;Past Year Enrollment and Q Reports&rdquo; slot.
             </div>
         </article>
     </section>
@@ -925,14 +925,14 @@ ul.bullets li::before {
                 <span class="pdf-card-num">6.</span>
                 <h4 class="pdf-card-title">Current Year Enrollment Report</h4>
                 <p>This year&rsquo;s seminars: title, instructor, term, applications, students placed.</p>
-                <p class="pdf-card-src">From Current Seminars Offered</p>
+                <p class="pdf-card-src">From Current Year Seminars</p>
             </article>
 
             <article class="pdf-card">
                 <span class="pdf-card-num">7.</span>
                 <h4 class="pdf-card-title">Prior Year Enrollment and Evaluations</h4>
                 <p>Last year&rsquo;s seminars with applications, enrollment, and Q report scores for seminar and instructor.</p>
-                <p class="pdf-card-src">From Past Q Reports</p>
+                <p class="pdf-card-src">From Past Year Enrollment and Q Reports</p>
             </article>
 
             <article class="pdf-card">
@@ -963,7 +963,7 @@ ul.bullets li::before {
 
         <h3 class="sub">A PDF says &ldquo;No data available&rdquo;</h3>
         <p>
-            The tool found a department in one file but no matching rows in the file for that PDF. For example, PDF 6 says &ldquo;no data&rdquo; for <code>[ANTH]</code>. That means Faculty Teaching History had Anthropology, but Current Seminars Offered had no Anthropology rows this year. This is expected when a department is not running a seminar this year.
+            The tool found a department in one file but no matching rows in the file for that PDF. For example, PDF 6 says &ldquo;no data&rdquo; for <code>[ANTH]</code>. That means Faculty Teaching History had Anthropology, but Current Year Seminars had no Anthropology rows this year. This is expected when a department is not running a seminar this year.
         </p>
 
         <h3 class="sub">A warning appears about reading a file</h3>
@@ -994,12 +994,12 @@ ul.bullets li::before {
                 Add a new year column on the right. Fill in the <code>X</code>, <code>XX</code>, <code>X*</code>, <code>X!</code>, <code>X!!</code> notation for every faculty member who taught. Promote, retire, or remove faculty whose status changed, and add any new hires. This is the slowest step, so consider updating only the faculty teaching this year first and revisiting the rest later. You can also ask HCIR for a list of faculty whose rank changed, which saves you from checking each person by hand.
             </li>
             <li>
-                <strong>Get Current Seminars Offered for the new year.</strong>
+                <strong>Get Current Year Seminars for the new year.</strong>
                 Once the lottery is finalized, request the data file from HCIR. Clean and merge it into the same column shape described in section 3.
             </li>
             <li>
-                <strong>Get Past Q Reports for the prior year.</strong>
-                Take last year&rsquo;s Current Seminars Offered file, merge in the Q report scores for each seminar (request these from HCIR), and save as the new Past Q Reports file. This is the most time-consuming step.
+                <strong>Get Past Year Enrollment and Q Reports for the prior year.</strong>
+                Take last year&rsquo;s Current Year Seminars file, merge in the Q report scores for each seminar (request these from HCIR), and save as the new Past Year Enrollment and Q Reports file. This is the most time-consuming step.
             </li>
             <li>
                 <strong>Ask whoever maintains the tool to update the year titles, if needed.</strong>

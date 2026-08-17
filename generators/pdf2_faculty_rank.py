@@ -36,7 +36,7 @@ _YEAR_PATTERN = re.compile(r'^\d{2,4}-\d{2,4}$')
 
 
 def compute_faculty_rank_data(all_rows):
-    """Compute Ladder/Non-Ladder/Emeritus percentages per year from SAVED rows.
+    """Compute Ladder/Non-Ladder/Emeritus percentages per year from FYSP Master rows.
 
     Reuses PDF 4's weighted rank aggregation so the two pages always agree, then
     rolls the seven rank categories up into the three bars and converts each

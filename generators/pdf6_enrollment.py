@@ -1,4 +1,4 @@
-"""PDF 6: 2026-2027 Enrollment Report - Table from APPLICATION_CURRENT.xlsx.
+"""PDF 6: 2026-2027 Enrollment Report - Table from FYSP Current Year Seminars.
 
 Page 6 reports the UPCOMING academic year, so its year label always reads one
 year ahead of page 7. Build its input with tools/build_pdf6_input.py.
@@ -28,7 +28,7 @@ NUMBER_WORDS = {2: 'two', 3: 'three', 4: 'four'}
 
 
 def load_enrollment_data(file_path):
-    """Load APPLICATION_CURRENT.xlsx and return DataFrame."""
+    """Load FYSP Current Year Seminars and return DataFrame."""
     df = pd.read_excel(file_path)
     return df
 
@@ -86,7 +86,7 @@ def build_co_teacher_index(df, column_mapping):
 def create_pdf6(department, output_path, df):
     """Create PDF 6 enrollment report for a department.
 
-    df: DataFrame from APPLICATION_CURRENT.xlsx
+    df: DataFrame from FYSP Current Year Seminars
     """
     dept_data = get_department_data(df, department)
 

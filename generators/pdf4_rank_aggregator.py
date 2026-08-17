@@ -214,7 +214,7 @@ def layout_style(row_count):
 def create_pdf4(dept, output_path, saved_data):
     """Create PDF 4 (Rank Aggregator) for a specific department.
 
-    saved_data: list of row dicts for this department from SAVED.xlsx
+    saved_data: list of row dicts for this department from FYSP Master
 
     Returns:
         The oldest year columns left off because the table would not have fit

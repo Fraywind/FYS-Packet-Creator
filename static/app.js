@@ -7,8 +7,8 @@
 
     const SOURCES = [
         { key: 'saved',     field: 'saved_xlsx',            friendly: 'Faculty Teaching History', inputId: 'file-saved' },
-        { key: 'current',   field: 'current_seminars_xlsx', friendly: 'Current Seminars Offered', inputId: 'file-current' },
-        { key: 'holygrail', field: 'holygrail_xlsx',        friendly: 'Prior-Year Evaluations',   inputId: 'file-holygrail' },
+        { key: 'current',   field: 'current_seminars_xlsx', friendly: 'Current Year Seminars', inputId: 'file-current' },
+        { key: 'holygrail', field: 'holygrail_xlsx',        friendly: 'Past Year Enrollment and Q Reports', inputId: 'file-holygrail' },
     ];
 
     const state = {

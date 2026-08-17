@@ -26,7 +26,7 @@ Rank sorting hierarchy (top to bottom):
     7. Emeritus / Emerita
     8. Visiting (all levels)
 
-Data source: SAVED.xlsx (the "Big Faculty Full Spreadsheet")
+Data source: FYSP Master.xlsx
 
 Dependencies:
     openpyxl: Direct Excel file reading
@@ -220,13 +220,13 @@ def get_rank_abbreviation(rank):
 # ---------------------------------------------------------------------------
 
 def read_excel_data_by_department(file_path):
-    """Read SAVED.xlsx and return data grouped by department.
+    """Read FYSP Master.xlsx and return data grouped by department.
 
     This is a duplicate of the same function in pdf4_rank_aggregator.py,
     kept here for module independence. Both produce the same output format.
 
     Args:
-        file_path: Path to the SAVED.xlsx file.
+        file_path: Path to the FYSP Master.xlsx file.
 
     Returns:
         A tuple of (headers, data_by_dept) where:
@@ -265,7 +265,7 @@ SYM_CHECK = '✓'         # single check: taught that year
 
 
 def marker_symbol(marker):
-    """Return the table glyph for a raw SAVED marker, or '' for a blank cell."""
+    """Return the table glyph for a raw FYSP Master marker, or '' for a blank cell."""
     value = str(marker or '').strip()
     if not value:
         return ''
@@ -346,8 +346,8 @@ def create_pdf5(dept, output_path, headers, dept_data):
     Args:
         dept: Department acronym (e.g., 'HIST').
         output_path: Full file path for the output PDF.
-        headers: List of column headers from SAVED.xlsx.
-        dept_data: List of row dicts for this department from SAVED.xlsx.
+        headers: List of column headers from FYSP Master.xlsx.
+        dept_data: List of row dicts for this department from FYSP Master.xlsx.
 
     Returns:
         The oldest year columns left off because the table would not have fit on

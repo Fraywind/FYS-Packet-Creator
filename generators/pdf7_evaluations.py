@@ -1,4 +1,4 @@
-"""PDF 7: Enrollment and Evaluations - Table from HOLYGRAIL.xlsx."""
+"""PDF 7: Enrollment and Evaluations - Table from FYSP Past Year Enrollment and Q Reports."""
 
 import os
 from xml.sax.saxutils import escape
@@ -21,19 +21,19 @@ RIGHT_PADDING = 4
 
 
 def load_holygrail_data(file_path):
-    """Load HOLYGRAIL.xlsx and return DataFrame."""
+    """Load FYSP Past Year Enrollment and Q Reports and return DataFrame."""
     df = pd.read_excel(file_path)
     return df
 
 
 def get_department_data(df, department):
-    """Get HOLYGRAIL data for a specific department."""
+    """Get past-year enrollment and Q data for a specific department."""
     dept_data = df[df['DEPT'].str.contains(department, case=False, na=False)]
     return dept_data
 
 
 def get_all_departments(df):
-    """Extract all unique departments from HOLYGRAIL data."""
+    """Extract all unique departments from past-year enrollment and Q data."""
     departments = df['DEPT'].dropna().unique()
     all_depts = set()
     for dept in departments:
@@ -48,7 +48,7 @@ def get_all_departments(df):
 def create_pdf7(department, output_path, df):
     """Create PDF 7 enrollment and evaluations report for a department.
 
-    df: DataFrame from HOLYGRAIL.xlsx
+    df: DataFrame from FYSP Past Year Enrollment and Q Reports
     """
     dept_data = get_department_data(df, department)
 

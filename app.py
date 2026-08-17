@@ -41,17 +41,17 @@ NOTES_FILENAME = 'README.txt'
 # it is. Used both for saving uploads and for the "source files" section of the
 # notes, so the two can never disagree about what is required.
 SOURCES = [
-    ('saved_xlsx', 'SAVED.xlsx', 'pages 1, 2, 3, 4, 5',
-     'master faculty teaching history'),
-    ('current_seminars_xlsx', 'CURRENT SEMINARS OFFERED.xlsx', 'page 6',
+    ('saved_xlsx', 'FYSP Master.xlsx', 'pages 1, 2, 3, 4, 5',
+     'faculty teaching history'),
+    ('current_seminars_xlsx', 'FYSP Current Year Seminars.xlsx', 'page 6',
      'seminars running this year, with applications and placements'),
-    ('holygrail_xlsx', 'HOLYGRAIL.xlsx', 'page 7',
+    ('holygrail_xlsx', 'FYSP Past Year Enrollment and Q Reports.xlsx', 'page 7',
      "last year's enrollment with Q report scores"),
 ]
 
-# The current-seminars workbook was called APPLICATION_CURRENT until August
-# 2026. Accept the old upload field and the old saved file name so a cached copy
-# of the page, or an uploads folder from before the rename, still works.
+# The upload field keys predate the file names above and are kept as they are:
+# renaming them would break a cached copy of the page and any uploads folder
+# written by an earlier run. Only the names staff see have changed.
 LEGACY_FIELDS = {'application_current_xlsx': 'current_seminars_xlsx'}
 
 # Departments that exist in the source data for documentation/accounting but
@@ -125,7 +125,7 @@ def generate_packets():
             all_saved_rows = [row for rows in saved_data_by_dept.values() for row in rows]
             faculty_rank_data = compute_faculty_rank_data(all_saved_rows)
         except Exception as e:
-            results['errors'].append(f"Error reading SAVED.xlsx: {str(e)}")
+            results['errors'].append(f"Error reading FYSP Master.xlsx: {str(e)}")
 
     enrollment_df = None
     if current_path:
@@ -133,7 +133,7 @@ def generate_packets():
             enrollment_df = load_enrollment_data(current_path)
             all_depts.update(get_pdf6_depts(enrollment_df))
         except Exception as e:
-            results['errors'].append(f"Error reading CURRENT SEMINARS OFFERED.xlsx: {str(e)}")
+            results['errors'].append(f"Error reading FYSP Current Year Seminars.xlsx: {str(e)}")
 
     holygrail_df = None
     if holygrail_path:
@@ -141,7 +141,7 @@ def generate_packets():
             holygrail_df = load_holygrail_data(holygrail_path)
             all_depts.update(get_pdf7_depts(holygrail_df))
         except Exception as e:
-            results['errors'].append(f"Error reading HOLYGRAIL.xlsx: {str(e)}")
+            results['errors'].append(f"Error reading FYSP Past Year Enrollment and Q Reports.xlsx: {str(e)}")
 
     if not all_depts:
         return jsonify({'status': 'error',
@@ -167,7 +167,7 @@ def generate_packets():
 
         dept_pdfs = []
 
-        # PDF 1 & 2 (same for all departments - from SAVED.xlsx department list)
+        # PDF 1 & 2 (same for all departments - from FYSP Master department list)
         if saved_data_by_dept and dept in saved_data_by_dept:
             try:
                 pdf1_path = os.path.join(dept_folder, f"1. [{sanitized}] # of First-Year Seminars by Academic Year.pdf")
@@ -185,7 +185,7 @@ def generate_packets():
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 2: {str(e)}")
 
-        # PDF 3 (3D graph of seminars per year - from SAVED.xlsx)
+        # PDF 3 (3D graph of seminars per year - from FYSP Master)
         if saved_data_by_dept and dept in saved_data_by_dept:
             try:
                 pdf3_path = os.path.join(dept_folder, f"3. [{sanitized}] Seminars Taught per Year (3D Graph).pdf")
@@ -195,7 +195,7 @@ def generate_packets():
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 3: {str(e)}")
 
-        # PDF 4 (Rank Aggregator - from SAVED.xlsx)
+        # PDF 4 (Rank Aggregator - from FYSP Master)
         if saved_data_by_dept and dept in saved_data_by_dept:
             try:
                 pdf4_path = os.path.join(dept_folder, f"4. [{sanitized}] Seminars Taught per Year per Rank.pdf")
@@ -207,7 +207,7 @@ def generate_packets():
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 4: {str(e)}")
 
-        # PDF 5 (Faculty Table - from SAVED.xlsx)
+        # PDF 5 (Faculty Table - from FYSP Master)
         if saved_data_by_dept and dept in saved_data_by_dept and saved_headers:
             try:
                 pdf5_path = os.path.join(dept_folder, f"5. [{sanitized}] Faculty Teaching Seminars by Name.pdf")
@@ -219,7 +219,7 @@ def generate_packets():
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 5: {str(e)}")
 
-        # PDF 6 (Enrollment - from CURRENT SEMINARS OFFERED.xlsx)
+        # PDF 6 (Enrollment - from FYSP Current Year Seminars)
         if enrollment_df is not None:
             try:
                 pdf6_path = os.path.join(dept_folder, f"6. [{sanitized}] 2026\u20132027 Enrollment Report.pdf")
@@ -229,7 +229,7 @@ def generate_packets():
             except Exception as e:
                 results['errors'].append(f"[{dept}] PDF 6: {str(e)}")
 
-        # PDF 7 (Evaluations - from HOLYGRAIL.xlsx)
+        # PDF 7 (Evaluations - from FYSP Past Year Enrollment and Q Reports)
         if holygrail_df is not None:
             try:
                 pdf7_path = os.path.join(dept_folder, f"7. [{sanitized}] 2025\u20132026 Enrollment and Evaluations.pdf")
