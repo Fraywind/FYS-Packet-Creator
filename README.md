@@ -47,8 +47,10 @@ Notes on each:
   [FYS-New-Year-Matching](#related-projects). This tool only reads the file.
 - **FYSP Current Year Seminars.xlsx** is built with `tools/build_pdf6_input.py` from the registrar
   enrollment export.
-- **FYSP Past Year Enrollment and Q Reports.xlsx** is largely last year's Current Year Seminars
-  file with the Q scores merged in.
+- **FYSP Past Year Enrollment and Q Reports.xlsx** starts as last year's Current Year Seminars
+  file with the Q scores merged in, and then has its enrollment column replaced with the
+  registrar's real end-of-term counts by `tools/build_pdf7_input.py`. That second step is not
+  optional: see [What "Enrolled" means on each page](#what-enrolled-means-on-each-page).
 
 The upload slots go by position on the page, not by file name, so a file that is still named
 something else on disk uploads into the right slot.
@@ -113,10 +115,49 @@ into `output/README.txt` for a person to handle.
 **Every run starts clean.** `output/` is emptied at the start of each run, so what is in there is
 always from the most recent run and never a mix of two.
 
+## What "Enrolled" means on each page
+
+Pages 6 and 7 both print a column headed **Enrolled**, and the two years mean different things by
+it. Getting these confused is the one mistake in this pipeline that produces a page which looks
+completely normal and is wrong on every row, so it is worth being deliberate about.
+
+| | Page 6 | Page 7 |
+|---|---|---|
+| Year | The upcoming one | The one that just finished |
+| Has the seminar run? | No | Yes |
+| Number that exists | Lottery placement only | The registrar's actual enrollment |
+| Column read | `Placed` | `ENROLL ` |
+| Built by | `tools/build_pdf6_input.py` | `tools/build_pdf7_input.py` |
+
+Page 6 uses placement **on purpose**, and says so on the page: "Enrolled - As of the Fall Course
+Registration Deadline". For a year that has not started, placement is the only number there is.
+
+Page 7 must not. That year is over, the registrar has real counts, and the page sets those numbers
+beside Q scores earned by the students who actually finished the course. A placement number there
+is not a rounding error, it is a different quantity.
+
+The two get confused because page 7's input begins life as last year's page 6 file, which carries
+`Placed`. If the Q files that get merged in happen to carry real enrollment, the mistake is
+covered up; if they do not, the placements survive into the packet.
+
+**2025-2026 is the worked example.** `FALL 2025 Q SCORES.xlsx` has a `Students_Enrolled` column, so
+all 79 fall rows came out right. The spring Q file has only Q averages, so all 46 spring rows kept
+their August placements. Homi Bhabha's 63N printed 15, which was its capacity and its placement,
+next to a Q score earned by the 4 students who finished it. Running `tools/build_pdf7_input.py`
+against the registrar's spring export corrected 40 rows and left fall untouched.
+
+**Which registrar column counts as enrolled** is a genuine choice, so it is a flag on the script
+rather than a constant. The default is the add/drop column (`Enrollment as of Feb. 3rd` in the
+spring export), because that is the roster that sat the course and produced the Q scores printed
+beside it. The registration-day column counts students who registered and then dropped, and runs
+several students higher per seminar.
+
 ## What still needs a person
 
 - Verifying joint appointments and co-teaching in FYSP Master before a packet cycle.
 - Adding shortened forms for seminar titles the run flags.
+- Deciding who taught a seminar when the registrar export and the application system disagree.
+  `tools/build_pdf7_input.py` reports these rather than picking one.
 - Bumping the hardcoded year labels each cycle. `output/README.txt` lists them with the exact file
   and the value they need.
 - Non-FAS packets (HBS, HDS, HGSE, HKS, HLS, HMS, HSPH) were a lower priority when this was built.
@@ -130,8 +171,12 @@ always from the most recent run and never a mix of two.
    `tools/build_pdf6_input.py`.
 3. Merge last year's Q report scores into last year's Current Year Seminars file to produce the
    new FYSP Past Year Enrollment and Q Reports.
-4. Bump the hardcoded year labels listed in `output/README.txt`.
-5. Run the tool, read `output/README.txt`, then send the packets out.
+4. Replace that file's enrollment column with the registrar's real end-of-term counts using
+   `tools/build_pdf7_input.py`, once the term enrollment exports are out. Skipping this leaves
+   August placements on page 7. See
+   [What "Enrolled" means on each page](#what-enrolled-means-on-each-page).
+5. Bump the hardcoded year labels listed in `output/README.txt`.
+6. Run the tool, read `output/README.txt`, then send the packets out.
 
 ## Documentation
 

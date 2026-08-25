@@ -1,4 +1,16 @@
-"""PDF 7: Enrollment and Evaluations - Table from FYSP Past Year Enrollment and Q Reports."""
+"""PDF 7: Enrollment and Evaluations - Table from FYSP Past Year Enrollment and Q Reports.
+
+The "Enrolled" column here means students who actually enrolled, not students
+placed in the August lottery. Page 6 reads "Placed" on purpose because its year
+has not run yet; this page reports a year that is over, so its numbers come from
+the registrar's end-of-term counts and sit beside Q scores earned by the students
+who finished the course.
+
+The input file starts as last year's page 6 file, which carries placements, so
+the enrollment column has to be replaced before the packets are built. That is
+what tools/build_pdf7_input.py does. Skipping it silently prints placement
+numbers under a heading that promises enrollment.
+"""
 
 import os
 from xml.sax.saxutils import escape
