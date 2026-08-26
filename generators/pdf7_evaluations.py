@@ -10,6 +10,10 @@ The input file starts as last year's page 6 file, which carries placements, so
 the enrollment column has to be replaced before the packets are built. That is
 what tools/build_pdf7_input.py does. Skipping it silently prints placement
 numbers under a heading that promises enrollment.
+
+A seminar that ran without a Q score carries "N/A" in the sheet, and where
+only one of the two scores is missing, only that one reads "N/A". Both are
+printed as written; nothing here fills a score in.
 """
 
 import os

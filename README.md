@@ -107,7 +107,11 @@ These are the decisions the tool makes on its own, so you know what to expect.
   departments and which years.
 
 **Nothing is filled in for you.** A department with no rows in a file gets no page from that file.
-A missing Q score is left blank. The tool never puts in a number that is not in the spreadsheet.
+A seminar that ran without a Q score reads "N/A", written that way in the source spreadsheet
+rather than invented by the tool, and page 7 prints it as it stands. Where one of the two scores
+exists and the other does not, only the missing one reads "N/A" (2025-26: Anne Becker's 71X has a
+seminar score but no instructor score). The tool never puts in a number that is not in the
+spreadsheet.
 
 **Anything unclear is written down, not guessed at.** If the tool cannot decide something, it goes
 into `output/README.txt` for a person to handle.
