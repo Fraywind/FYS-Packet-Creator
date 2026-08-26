@@ -32,10 +32,29 @@ LEFT_PADDING = 4
 RIGHT_PADDING = 4
 
 
+def format_q_score(value):
+    """Render a Q score the way the column reads: a number keeps its decimal
+    point, so a whole 5 prints as "5.0" beside a 4.45 rather than as a bare
+    "5". Anything that is not a number, such as the "N/A" written when a
+    seminar ran without a score, prints as it stands.
+    """
+    text = str(value).strip()
+    try:
+        return str(float(text))
+    except ValueError:
+        return text
+
+
 def load_holygrail_data(file_path):
-    """Load FYSP Past Year Enrollment and Q Reports and return DataFrame."""
-    df = pd.read_excel(file_path)
-    return df
+    """Load FYSP Past Year Enrollment and Q Reports and return DataFrame.
+
+    Read with pandas' automatic blank detection turned off. A seminar that ran
+    without a Q score is written "N/A" in the sheet, and pandas treats that
+    text as a missing value by default, so it reached the page as the word
+    "nan". Off, the cell prints the "N/A" the sheet actually holds, and a truly
+    empty cell stays empty instead of printing "nan" as well.
+    """
+    return pd.read_excel(file_path, keep_default_na=False, na_values=[])
 
 
 def get_department_data(df, department):
@@ -140,8 +159,8 @@ def create_pdf7(department, output_path, df):
         term = str(row.get(column_mapping.get('Term', 'TERM'), ''))
         apps = str(row.get(column_mapping.get('# of Apps', 'APPL#'), ''))
         enrolled = str(row.get(column_mapping.get('Enrolled', 'ENROLL '), ''))
-        sem_q = str(row.get(column_mapping.get('Seminar Q', 'SEMQ'), ''))
-        inst_q = str(row.get(column_mapping.get('Instructor Q', 'INST Q'), ''))
+        sem_q = format_q_score(row.get(column_mapping.get('Seminar Q', 'SEMQ'), ''))
+        inst_q = format_q_score(row.get(column_mapping.get('Instructor Q', 'INST Q'), ''))
 
         raw_rows.append([sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q])
 
