@@ -53,6 +53,7 @@ import openpyxl
 HEADER_SEARCH_ROWS = 6
 
 SEM_COL = 'Class Name'
+CLASS_COL = 'Class Number'
 INSTRUCTOR_COL = 'Instructor'
 TITLE_COL = 'Title'
 DEFAULT_ENROLL_COL = 'Enrollment as of Feb. 3rd'
@@ -62,6 +63,7 @@ QR_SEM = 'SEM#'
 QR_TERM = 'TERM'
 QR_LAST = 'LAST NAME'
 QR_ENROLL = 'ENROLL '
+QR_CLASS = 'CLASS#'
 QR_SEMQ = 'SEMQ'
 QR_INSTQ = 'INST Q'
 
@@ -130,6 +132,7 @@ def read_enrollment(path, enroll_col):
             )
 
     totals = {}
+    by_class = {}
     sections = {}
     instructors = {}
     cancelled = set()
@@ -148,16 +151,20 @@ def read_enrollment(path, enroll_col):
             continue
         totals[sem] = totals.get(sem, 0) + int(value)
         sections[sem] = sections.get(sem, 0) + 1
+        if hkey(CLASS_COL) in headers:
+            cls = row[headers[hkey(CLASS_COL)] - 1].value
+            if cls not in (None, ''):
+                by_class[str(int(float(cls)))] = int(value)
         if hkey(INSTRUCTOR_COL) in headers:
             name = norm_name(row[headers[hkey(INSTRUCTOR_COL)] - 1].value)
             if name:
                 instructors.setdefault(name, set()).add(sem)
 
-    return totals, sections, cancelled, instructors
+    return totals, by_class, sections, cancelled, instructors
 
 
-def apply_term(ws, headers, term, totals, sections, cancelled, instructors,
-               fill_na):
+def apply_term(ws, headers, term, totals, by_class, sections, cancelled,
+               instructors, fill_na):
     """Rewrite the enrollment column for one term. Returns a report dict."""
     changed, unchanged, unmatched, recovered, na_filled, still_present = (
         [], [], [], [], [], [])
@@ -194,11 +201,19 @@ def apply_term(ws, headers, term, totals, sections, cancelled, instructors,
             unmatched.append((sem, last))
             continue
 
-        if sections.get(sem, 1) > 1:
+        # A seminar run as several sections shares one SEM#, so the seminar
+        # number alone cannot say which section a row belongs to. Where the Q
+        # report carries the registrar's CLASS#, use it: that row then gets its
+        # own section's enrolment instead of the seminar-wide total.
+        cls = row[headers[hkey(QR_CLASS)] - 1].value if hkey(QR_CLASS) in headers else None
+        cls = str(int(float(cls))) if cls not in (None, '') else None
+
+        if sections.get(sem, 1) > 1 and cls is None:
             multi_section.add(sem)
 
         cell = row[headers[hkey(QR_ENROLL)] - 1]
-        before, after = cell.value, totals[sem]
+        after = by_class.get(cls) if cls in by_class else totals[sem]
+        before = cell.value
         if before == after:
             unchanged.append((sem, last, after))
         else:
@@ -250,10 +265,10 @@ def main():
     for term, path in (('Spring', args.spring), ('Fall', args.fall)):
         if not path:
             continue
-        totals, sections, cancelled, instructors = read_enrollment(
+        totals, by_class, sections, cancelled, instructors = read_enrollment(
             path, args.enroll_column)
-        reports[term] = apply_term(ws, headers, term, totals, sections,
-                                   cancelled, instructors,
+        reports[term] = apply_term(ws, headers, term, totals, by_class,
+                                   sections, cancelled, instructors,
                                    fill_na=not args.no_fill_na)
         reports[term]['source'] = path
         reports[term]['seminars'] = len(totals)
