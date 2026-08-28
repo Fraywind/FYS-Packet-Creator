@@ -115,6 +115,18 @@ def abbreviate_year(year):
     return f"{start[-2:] if len(start) == 4 else start}-{end[-2:] if len(end) == 4 else end}"
 
 
+# "B" marks a professor who has retired, left Harvard, or died while teaching.
+# It says something about the person today, not about whether the seminar ran,
+# so it never changes a score: XB counts as X, and X*B or XB* as X*. Page 5
+# still prints those markers in black, which is where the reader learns it.
+def score_marker(value):
+    """A marker with its status annotation removed, for scoring only."""
+    text = str(value).strip()
+    if text.upper() == 'XXSTAR':
+        return text
+    return text.replace('B', '').replace('b', '')
+
+
 def aggregate_by_rank(data):
     """Aggregate teaching data by rank categories."""
     rank_data = {rank: {} for rank in RANK_CATEGORIES}
@@ -132,7 +144,7 @@ def aggregate_by_rank(data):
         rank_category = categorize_rank(rank)
 
         for i, year in enumerate(year_columns):
-            value = row.get(year, '')
+            value = score_marker(row.get(year, ''))
             abbr_year = abbreviated_year_columns[i]
 
             # Multi-rank handling

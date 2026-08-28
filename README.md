@@ -159,6 +159,11 @@ in both terms or two sections of it in one term. In the master that is the `XX` 
 scores 2 on pages 3 and 4 through the shared rank aggregation, in that professor's own department
 and in that year's column only.
 
+A `B` on a marker (`XB`, `X*B`, `XB*`) says the professor has since retired, left Harvard, or died
+while teaching. It says something about the person today, not about whether the seminar ran, so it
+never changes a score: `XB` counts as `X`, `X*B` and `XB*` as `X*`. Page 5 prints those markers in
+black, which is where a reader learns it.
+
 2025-26 is 122: Fall 78 and Spring 44. Two of those are second sections that are easy to miss,
 because the application and Q files each show one row where two classes ran:
 
