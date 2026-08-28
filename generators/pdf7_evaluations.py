@@ -28,7 +28,8 @@ from reportlab.lib import colors
 from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
-                     fit_seminar_title, TITLE_OVERRIDES, canonical_person_name)
+                     fit_seminar_title, TITLE_OVERRIDES, canonical_person_name,
+                     department_matches)
 
 # Table cell padding, needed both by the TableStyle and by the title fitting so
 # the two agree on how much room a title actually has.
@@ -63,7 +64,8 @@ def load_holygrail_data(file_path):
 
 def get_department_data(df, department):
     """Get past-year enrollment and Q data for a specific department."""
-    dept_data = df[df['DEPT'].str.contains(department, case=False, na=False)]
+    dept_data = df[df['DEPT'].apply(
+        lambda cell: department_matches(cell, department))]
     return dept_data
 
 

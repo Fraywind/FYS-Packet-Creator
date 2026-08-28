@@ -2,6 +2,7 @@
 
 import math
 import re
+import unicodedata
 
 DEPARTMENT_MAPPING = {
     'Harvard Business School': 'HBS',
@@ -210,6 +211,12 @@ def marker_for(index):
     return FOOTNOTE_MARKERS[index % len(FOOTNOTE_MARKERS)]
 
 
+def _ascii(text):
+    """Accent-free comparison form, so Bréond and Breond key the same."""
+    return unicodedata.normalize('NFKD', str(text).strip()) \
+        .encode('ascii', 'ignore').decode()
+
+
 def canonical_person_name(first, last):
     """Display name for an instructor, consistent across every page.
 
@@ -222,4 +229,59 @@ def canonical_person_name(first, last):
     last = str(last).strip()
     if re.search(r'\S', first):
         first = re.sub(r'\s+[A-Za-z]\.?$', '', first).strip()
+    override = PERSON_NAME_OVERRIDES.get(
+        (_ascii(last).lower(), _ascii(first)[:1].lower()))
+    if override:
+        return override
     return f"{first} {last}".strip()
+
+
+# Department cells hold either one department or a joint pair ("COMPLIT / ENGL"),
+# so a department matches when it equals one of the parts. Substring matching
+# looked fine until a full committee name arrived: "SOC" is inside "Committee on
+# Degrees in Social Studies", which put two Social Studies seminars on the
+# Sociology packet.
+def department_matches(cell, department):
+    """True when `department` is one of the departments named in `cell`."""
+    wanted = str(department).strip().lower()
+    return any(part.strip().lower() == wanted
+               for part in str(cell).split('/'))
+
+
+# The same person is written differently by the two source spreadsheets, so one
+# instructor read two ways across pages 6 and 7 ("Sun Kim" against "Sun Joo
+# Kim"). Keyed by surname and first initial, never surname alone: David and
+# Philip Fisher, Jessica and Stephen Marglin, Courtney and David Lamberth, and
+# Anna and Benjamin Wilson are different people who share a surname.
+PERSON_NAME_OVERRIDES = {
+    ('kim', 's'): 'Sun Joo Kim',
+    ('mankiw', 'n'): 'N. Gregory Mankiw',
+    ('quast', 'k'): 'Kathleen Quast',
+    ('vafa', 'c'): 'Cumrun Vafa',
+}
+
+
+def name_mismatches(page6_names, page7_names):
+    """Instructors whose display name differs between pages 6 and 7.
+
+    Pages 6 and 7 read different spreadsheets, so the same person can arrive
+    written two ways ("Sun Kim" on one, "Sun Joo Kim" on the other) and read as
+    two people. Matching is on surname plus first initial, never surname alone:
+    David and Philip Fisher are different people, and so are Jessica and Stephen
+    Marglin, Courtney and David Lamberth, and Anna and Benjamin Wilson.
+
+    Takes {(surname, initial): {names seen}} for each page. Returns a sorted
+    list of (page 6 name, page 7 name) still disagreeing after
+    PERSON_NAME_OVERRIDES has been applied, for a person to settle.
+    """
+    out = []
+    for key in sorted(set(page6_names) & set(page7_names)):
+        left, right = page6_names[key], page7_names[key]
+        if left != right:
+            out.append((' / '.join(sorted(left)), ' / '.join(sorted(right))))
+    return out
+
+
+def name_key(first, last):
+    """Surname plus first initial, the unit name_mismatches compares on."""
+    return (_ascii(last).lower(), _ascii(first)[:1].lower())

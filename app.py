@@ -24,6 +24,7 @@ from generators.pdf5_faculty_table import read_excel_data_by_department as read_
 from generators.pdf6_enrollment import create_pdf6, load_enrollment_data, get_all_departments as get_pdf6_depts
 from generators.pdf7_evaluations import create_pdf7, load_holygrail_data, get_all_departments as get_pdf7_depts
 from generators.combiner import combine_department_pdfs
+from generators.shared import canonical_person_name, name_key, name_mismatches
 
 app = Flask(__name__)
 app.config['MAX_CONTENT_LENGTH'] = 50 * 1024 * 1024  # 50MB max upload
@@ -148,6 +149,25 @@ def generate_packets():
                         'message': 'No departments found. Please upload at least one spreadsheet.'})
 
     # Generate PDFs for each department
+    # Pages 6 and 7 read different spreadsheets, so the same instructor can be
+    # written two ways and read as two people. Collect how each page would print
+    # every name and report the ones that still disagree.
+    def _names(frame, first_col, last_col):
+        seen = {}
+        if frame is None:
+            return seen
+        for _, row in frame.iterrows():
+            first, last = row.get(first_col, ''), row.get(last_col, '')
+            if not str(last).strip():
+                continue
+            seen.setdefault(name_key(first, last), set()).add(
+                canonical_person_name(first, last))
+        return seen
+
+    mismatched_names = name_mismatches(
+        _names(enrollment_df, 'Fname', 'LName'),
+        _names(holygrail_df, 'FIRST  NAME', 'LAST NAME'))
+
     excluded_present = []
     oversized_titles = set()
     # (page number, department) -> the oldest year columns that page left off so
@@ -302,6 +322,19 @@ def generate_packets():
                 '(cut at the title\'s own colon or dash, do not paraphrase):',
             ]
             lines += [f'  - {t}' for t in sorted(oversized_titles)]
+        if mismatched_names:
+            lines += [
+                '',
+                'The same instructor is written differently on page 6 and page 7.',
+                'The two pages read different spreadsheets, so one person can arrive',
+                'spelled two ways and read as two people. DECIDE WHICH FORM YOU WANT',
+                'and add it to PERSON_NAME_OVERRIDES in generators/shared.py, keyed by',
+                'surname and first initial. Nothing was changed for you: both pages',
+                'still print what their own spreadsheet says.',
+                '',
+                '                     page 6                page 7',
+            ]
+            lines += [f'  - {a:<20} {b}' for a, b in mismatched_names]
         if trimmed_years:
             lines += [
                 '',
@@ -364,6 +397,10 @@ def generate_packets():
     if trimmed_years:
         attention.append(f'{len(trimmed_years)} table{"s" if len(trimmed_years) > 1 else ""} '
                          f'start a year later to fit the page')
+    if mismatched_names:
+        attention.append(f'{len(mismatched_names)} instructor name'
+                         f'{"s" if len(mismatched_names) > 1 else ""} spelled '
+                         f'differently on pages 6 and 7')
     if oversized_titles:
         attention.append(f'{len(oversized_titles)} seminar title'
                          f'{"s" if len(oversized_titles) > 1 else ""} wrapped onto a second line')

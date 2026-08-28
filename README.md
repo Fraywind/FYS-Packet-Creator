@@ -119,6 +119,58 @@ into `output/README.txt` for a person to handle.
 **Every run starts clean.** `output/` is emptied at the start of each run, so what is in there is
 always from the most recent run and never a mix of two.
 
+## Departments, and the one that is not a department
+
+Department cells hold either one department or a joint pair ("COMPLIT / ENGL"), and a department
+matches when it equals one of the parts. It is not a substring test. That distinction is the whole
+point: **"Committee on Degrees in Social Studies" is not Sociology.** A substring test put its two
+seminars (Winston Berg's 74D and Bréond Durr's 74E) onto the SOC packet, because "SOC" sits inside
+"Social". Sociology's page 7 is Robert Sampson and Shai Dromi and no one else.
+
+**No packet is produced for the Committee.** It is in the source data for documentation and
+accounting only, it is listed in `EXCLUDED_DEPTS` in `app.py`, and every run names it in
+`output/README.txt` so the omission reads as a decision rather than a failure. In the master
+spreadsheet those rows carry their department **struck through**, which is the office's own marker
+for the same thing; the tool keys off the name, not the formatting.
+
+A consequence worth knowing: the Committee's seminars count toward the program totals on page 1 but
+reach no department packet.
+
+## One instructor, two spellings
+
+Pages 6 and 7 read different spreadsheets, so the same person can arrive written two ways and read
+as two people. 2025-26 had four: Sun Kim against Sun Joo Kim, N. Mankiw against N. Gregory Mankiw,
+Katie Quast against Kathleen Quast, and C. Vafa against Cumrun Vafa. The fuller form wins, and the
+decision is recorded in `PERSON_NAME_OVERRIDES` in `generators/shared.py`.
+
+Names are keyed by **surname plus first initial, never surname alone**. David and Philip Fisher are
+different people, and so are Jessica and Stephen Marglin, Courtney and David Lamberth, and Anna and
+Benjamin Wilson. Keying on surname would have merged four pairs of real people.
+
+Every run compares the two pages and lists anything still disagreeing in `output/README.txt` for a
+person to settle. Nothing is renamed automatically: a name the tool has not been told about prints
+on each page exactly as its own spreadsheet writes it.
+
+## Counting seminars for page 1
+
+Page 1 counts **offerings, not seminar numbers**, excluding anything the registrar marks CANCELLED.
+A professor who teaches two full classes in one year counts twice, whether that is the same seminar
+in both terms or two sections of it in one term. In the master that is the `XX` marker, which
+scores 2 on pages 3 and 4 through the shared rank aggregation, in that professor's own department
+and in that year's column only.
+
+2025-26 is 122: Fall 78 and Spring 44. Two of those are second sections that are easy to miss,
+because the application and Q files each show one row where two classes ran:
+
+- **Mankiw 43J**, two Fall sections. The application file gives it away with `Capacity` 24 where
+  the normal seminar is 12 or 15.
+- **52T**, two Spring sections with different co-teaching pairs, settled by the registrar's class
+  numbers 13241 and 17682.
+
+A hidden second section shows up as a doubled `Capacity`, and only a class-number export proves it.
+Trust the master's `XX` over the application and Q files here: the master is built from the
+class-row-level my.harvard roster and is the only source that can see sections at all.
+
 ## What "Enrolled" means on each page
 
 Pages 6 and 7 both print a column headed **Enrolled**, and the two years mean different things by
@@ -162,6 +214,8 @@ several students higher per seminar.
 - Adding shortened forms for seminar titles the run flags.
 - Deciding who taught a seminar when the registrar export and the application system disagree.
   `tools/build_pdf7_input.py` reports these rather than picking one.
+- Settling an instructor written two ways across pages 6 and 7. Each run lists them in
+  `output/README.txt`; the decision goes in `PERSON_NAME_OVERRIDES` in `generators/shared.py`.
 - Bumping the hardcoded year labels each cycle. `output/README.txt` lists them with the exact file
   and the value they need.
 - Non-FAS packets (HBS, HDS, HGSE, HKS, HLS, HMS, HSPH) were a lower priority when this was built.

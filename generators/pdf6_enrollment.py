@@ -17,6 +17,7 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
                      fit_seminar_title, TITLE_OVERRIDES, canonical_person_name,
+                     department_matches,
                      marker_for)
 
 # Table cell padding, needed both by the TableStyle and by the title fitting so
@@ -35,7 +36,8 @@ def load_enrollment_data(file_path):
 
 def get_department_data(df, department):
     """Get enrollment data for a specific department."""
-    dept_data = df[df['Department'].str.contains(department, case=False, na=False)]
+    dept_data = df[df['Department'].apply(
+        lambda cell: department_matches(cell, department))]
 
     # Remove NO PACKET entries
     if not dept_data.empty:
