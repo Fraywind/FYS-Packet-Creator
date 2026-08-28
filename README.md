@@ -39,7 +39,7 @@ its own pages, and the rest of the packet is still produced.
 |------|-------|-----------|------------------|
 | **FYSP Master.xlsx** | Pages 1, 2, 3, 4, 5 | Faculty teaching history, one column per academic year | Maintained year-round, updated once the new teaching roster is out |
 | **FYSP Current Year Seminars.xlsx** | Page 6 | The seminars running this year, with applications and placements | Usually once the course registration deadline has passed |
-| **FYSP Past Year Enrollment and Q Reports.xlsx** | Page 7 | Last year's enrollment with Q report scores merged in | After HCIR releases the Q reports |
+| **FYSP Past Year Enrollment and Q Reports.xlsx** | Page 7 | Last year's enrollment with Q report scores merged in, plus a `Sections` column where one instructor ran a seminar twice | After HCIR releases the Q reports |
 
 Notes on each:
 
@@ -171,6 +171,14 @@ because the application and Q files each show one row where two classes ran:
   the normal seminar is 12 or 15.
 - **52T**, two Spring sections with different co-teaching pairs, settled by the registrar's class
   numbers 13241 and 17682.
+
+Pages 6 and 7 both say so on the page rather than leaving a row looking like a single section. The
+instructor's name takes a footnote marker and the note reads "Prof. X taught two sections of this
+seminar in the same term, counted as two seminars in the program total." Both pages read a
+`Sections` column, so a multi-section seminar is recorded in the spreadsheet, not inferred: page 6
+gets it from `tools/build_pdf6_input.py`, and page 7 needs it entered by hand, since the Q report
+keeps one row per seminar and instructor and cannot otherwise tell one section from two. 2026-27
+has Finkbeiner's 54I on page 6; 2025-26 has Mankiw's 43J on page 7.
 
 A hidden second section shows up as a doubled `Capacity`, and only a class-number export proves it.
 Trust the master's `XX` over the application and Q files here: the master is built from the

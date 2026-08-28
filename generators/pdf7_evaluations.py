@@ -29,12 +29,14 @@ from reportlab.lib.enums import TA_CENTER, TA_LEFT
 
 from .shared import (ACRONYM_TO_FULL, sanitize_department_name,
                      fit_seminar_title, TITLE_OVERRIDES, canonical_person_name,
-                     department_matches)
+                     department_matches, marker_for)
 
 # Table cell padding, needed both by the TableStyle and by the title fitting so
 # the two agree on how much room a title actually has.
 LEFT_PADDING = 4
 RIGHT_PADDING = 4
+
+NUMBER_WORDS = {2: 'two', 3: 'three', 4: 'four'}
 
 
 def format_q_score(value):
@@ -168,7 +170,13 @@ def create_pdf7(department, output_path, df):
         sem_q = format_q_score(row.get(column_mapping.get('Seminar Q', 'SEMQ'), ''))
         inst_q = format_q_score(row.get(column_mapping.get('Instructor Q', 'INST Q'), ''))
 
-        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q])
+        try:
+            sections = int(row.get('Sections', 1) or 1)
+        except (TypeError, ValueError):
+            sections = 1
+
+        raw_rows.append([sem_num, title_text, professor, term, apps, enrolled,
+                         sem_q, inst_q, sections])
 
     # Width is measured against the titles as they will actually print, so a
     # shortened title does not reserve space for its full original length.
@@ -203,16 +211,42 @@ def create_pdf7(department, output_path, df):
     title_space = (optimal_title * inch) - (LEFT_PADDING + RIGHT_PADDING)
     table_data = [expected_columns]
     oversized_titles = []
+    footnotes = []          # (glyph, colour, text) in the order they appear
 
-    for sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q in raw_rows:
+    def next_marker(text):
+        # Pinned to 8pt so the marker stays legible beside a bold name.
+        glyph, colour = marker_for(len(footnotes))
+        footnotes.append((glyph, colour, text))
+        return f'<font color="{colour}" size="8">{glyph}</font>'
+
+    for (sem_num, title_text, professor, term, apps, enrolled, sem_q, inst_q,
+         sections) in raw_rows:
         text, size, fits, _ = fit_seminar_title(title_text, title_space)
         if not fits:
             oversized_titles.append(title_text.strip())
         title_style = ParagraphStyle(f'Title{size}', parent=styles['Normal'],
                                      fontName='Helvetica', fontSize=size,
                                      leading=size + 1.5, alignment=TA_LEFT)
-        table_data.append([sem_num, Paragraph(escape(text), title_style), professor,
-                           term, apps, enrolled, sem_q, inst_q])
+
+        # A seminar run as several sections by the same instructor is one row
+        # here, because the Q report keeps one row per seminar and instructor.
+        # Mark it the way page 6 does, so the row does not read as one section.
+        professor_cell = professor
+        if sections > 1:
+            count = NUMBER_WORDS.get(sections, sections)
+            marker = next_marker(
+                f"Prof. {professor.split()[-1]} taught {count} sections of this "
+                f"seminar in the same term, counted as {count} seminars in the "
+                f"program total. The applications, enrollment and Q scores shown "
+                f"cover all sections.")
+            professor_cell = Paragraph(
+                marker + escape(professor),
+                ParagraphStyle('Prof', parent=styles['Normal'],
+                               fontName='Helvetica-Bold', fontSize=10,
+                               leading=12, alignment=TA_LEFT))
+
+        table_data.append([sem_num, Paragraph(escape(text), title_style),
+                           professor_cell, term, apps, enrolled, sem_q, inst_q])
 
     table = Table(table_data, colWidths=col_widths)
 
@@ -242,5 +276,16 @@ def create_pdf7(department, output_path, df):
     table.setStyle(style)
 
     story.append(table)
+
+    if footnotes:
+        story.append(Spacer(1, 14))
+        note_style = ParagraphStyle('Footnote', parent=styles['Normal'],
+                                    fontSize=9, alignment=TA_CENTER,
+                                    textColor=colors.HexColor('#333333'),
+                                    fontName='Helvetica')
+        for glyph, colour, text in footnotes:
+            story.append(Paragraph(
+                f'<font color="{colour}">{glyph}</font> {escape(text)}', note_style))
+
     doc.build(story)
     return oversized_titles
