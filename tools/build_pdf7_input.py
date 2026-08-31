@@ -37,6 +37,13 @@ students who registered and then dropped.
 Nothing is guessed. Every row it cannot match is listed at the end and left
 alone, and a seminar the registrar marks CANCELLED is reported if it is still
 present in the Q report rather than silently removed.
+
+It does, though, treat the registrar as the authority on enrolment, so it will
+overwrite a number a person put there on purpose. 2025-26 has one: Matthew
+Rabin's 73R is 5 in the office's own record against the registrar's 9, and 5 is
+what the packet prints. Running this against the spring export changes it back
+to 9. Every change is listed before anything is written, and --dry-run writes
+nothing, so read the list before saving.
 """
 
 import argparse

@@ -55,6 +55,12 @@ Notes on each:
 The upload slots go by position on the page, not by file name, so a file that is still named
 something else on disk uploads into the right slot.
 
+**An uploaded file is copied into `uploads/` and served from there.** That copy does not track the
+original. Editing the spreadsheet on your disk changes nothing until you upload it again, and the
+run notes cannot tell you the packets were built from an older version, because as far as the tool
+is concerned the copy in `uploads/` is the file. After any edit to a source spreadsheet, upload it
+again before generating.
+
 ## What you get
 
 For each department (for example `[AAAS]`, `[HLS]`, `[SEAS]`):
@@ -233,6 +239,24 @@ several students higher per seminar.
   and the value they need.
 - Non-FAS packets (HBS, HDS, HGSE, HKS, HLS, HMS, HSPH) were a lower priority when this was built.
   Check them with the office before relying on them.
+- Entering `Sections` in the past-year Q report for any instructor who ran one seminar twice.
+  Page 6 gets this automatically; page 7 cannot infer it and will otherwise print one row that
+  reads like a single section.
+
+### Open as of the 2026-27 cycle
+
+- **Cindy Zapata** is in the past-year Q report on two 2025-26 seminars (66D in the fall with
+  Sabrineh Ardalan, 67C in the spring with Philip Torrey) but has **no row in the master, in any
+  year**. She reaches the HLS packet from the Q report alone, and pages 1 to 5 do not know she
+  exists. Either add her to the master or decide she should not be her own Q report row.
+- **Matthew Rabin's 73R enrolment is 5, not the registrar's 9.** The office's own record is the
+  authority there and 5 is what prints. It is the only row in the packet that deliberately departs
+  from the registrar, and `tools/build_pdf7_input.py` does not know that: running it against the
+  spring export will change 5 back to 9. It prints every change it makes, so read its output before
+  saving.
+- **The master spells `Ziolkowsky, J` where the seminar catalog says Ziolkowski.** Harmless to the
+  packets, but it is the only name that failed to reconcile between the master and the catalog for
+  2026-27.
 
 ## Yearly cycle
 
